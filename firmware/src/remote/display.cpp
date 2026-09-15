@@ -34,6 +34,7 @@
 #include "screens/stats_screen.h"
 #include "screens/update_screen.h"
 #include "settings.h"
+#include "stats.h"
 #include "slint-esp.h"
 #include "utilities/mem_debug.h"
 
@@ -407,6 +408,35 @@ extern "C" void apply_theme_settings() {
   theme.set_bg(slint::Color::from_rgb_uint8(0, 0, 0));
   theme.set_text(slint::Color::from_rgb_uint8(255, 255, 255));
   theme.set_text_dim(slint::Color::from_rgb_uint8(154, 154, 154));
+}
+
+// Refresh controls before applying the final hardware state: the settings
+// screen's change callbacks can preview brightness, theme and LED colour.
+extern "C" void display_refresh_device_settings(const DeviceSettings *previous) {
+  if (!get_slint_window()) {
+    return;
+  }
+  DeviceSettings old = *previous;
+  setup_settings_properties();
+  slint::invoke_from_event_loop([old]() {
+    if (!get_slint_window()) {
+      return;
+    }
+    display_set_bl_level(device_settings.bl_level);
+    if (old.screen_rotation != device_settings.screen_rotation) {
+      display_set_rotation(device_settings.screen_rotation);
+    }
+    if (old.hbm_mode != device_settings.hbm_mode) {
+      display_set_hbm(device_settings.hbm_mode == HBM_MODE_ON);
+    }
+    apply_theme_settings();
+    led_apply_mode();
+    const auto &state = get_slint_window()->global<UiState>();
+    state.set_pocket_mode_active(is_pocket_mode_enabled());
+    state.set_hbm_mode_label(hbm_mode_label(device_settings.hbm_mode));
+    state.set_led_mode_label(led_mode_label(device_settings.led_mode));
+    stats_update();
+  });
 }
 
 // Event loop thread

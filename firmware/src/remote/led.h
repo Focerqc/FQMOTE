@@ -2,6 +2,7 @@
 #define __LED_H
 
 #include <stdbool.h>
+#include "settings_types.h"
 #include <stdio.h>
 
 
@@ -24,16 +25,6 @@ typedef enum {
   LED_EFFECT_SOLID,
   LED_EFFECT_RAINBOW
 } LedEffect;
-
-// User-selectable LED behaviour, persisted in device_settings.led_mode and
-// cycled from the main menu. Order is the cycle order shown to the user, and
-// the values are persisted in NVS - append rather than renumber.
-typedef enum {
-  LED_MODE_OFF,    // Always dark, alerts included
-  LED_MODE_SOLID,  // Solid theme colour
-  LED_MODE_ALERTS, // Dark unless a duty alert is active
-  LED_MODE_COUNT   // Sentinel - keep last
-} LedModeOptions;
 
 void led_init();
 void led_deinit();

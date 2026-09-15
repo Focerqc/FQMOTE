@@ -1,23 +1,11 @@
 import { useEffect, useState } from 'react';
-import { FirmwareVersion, ReleaseType } from '../types';
+import { FirmwareVersion, GitHubRelease, ReleaseType } from '../types';
 import sortBy from 'lodash/sortBy';
 import uniqBy from 'lodash/uniqBy';
 import { fetchWithCorsProxy } from '../utils/corsProxy';
 
 const GITHUB_REPO = 'techfoundrynz/pubmote';
 const GITHUB_API = 'https://api.github.com';
-
-interface GitHubRelease {
-  name: string;
-  tag_name: string;
-  published_at: string;
-  prerelease: boolean;
-  assets: Array<{
-    name: string;
-    browser_download_url: string;
-    url: string;
-  }>;
-}
 
 export function useFirmware() {
   const [versions, setVersions] = useState<FirmwareVersion[]>([]);

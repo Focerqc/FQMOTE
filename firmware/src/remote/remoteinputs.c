@@ -16,6 +16,7 @@
 #include "remote/haptic.h"
 #include "rom/gpio.h"
 #include "settings.h"
+#include "settings_api.h"
 #include "time.h"
 #include <button_gpio.h>
 #include <freertos/FreeRTOS.h>
@@ -739,6 +740,13 @@ esp_err_t input_pins_apply(const struct InputPinSettings *cfg, char *err, size_t
     return ESP_OK;
   }
 
+  // Persist before replacing the live inputs so a failed write can be retried.
+  res = settings_save_input_pins(cfg);
+  if (res != ESP_OK) {
+    if (err && err_len) snprintf(err, err_len, "Could not save input pins: %s", esp_err_to_name(res));
+    return res;
+  }
+
   ESP_LOGI(TAG, "Applying input pins: js_x=%d js_y=%d btn=%d (level %u)", cfg->js_x_gpio, cfg->js_y_gpio, cfg->btn1_gpio,
            cfg->btn1_active_level);
 
@@ -753,7 +761,6 @@ esp_err_t input_pins_apply(const struct InputPinSettings *cfg, char *err, size_t
 
   // A moved axis has a different resting range, so its calibration is stale
   reset_axis_calibration(previous.js_x_gpio != cfg->js_x_gpio, previous.js_y_gpio != cfg->js_y_gpio);
-  save_input_pins();
 
   buttons_init();
   thumbstick_start();

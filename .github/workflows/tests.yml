@@ -1,0 +1,48 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: corepack enable && pnpm install --frozen-lockfile
+      - name: Check out ESP-IDF test dependencies
+        uses: actions/checkout@v4
+        with:
+          repository: espressif/esp-idf
+          ref: v5.5
+          path: .pio/test-idf
+          persist-credentials: false
+          sparse-checkout: |
+            components/console
+            components/json
+      - name: Build and run C tests
+        run: |
+          git -C .pio/test-idf submodule update --init components/json/cJSON
+          cmake -S tests -B .pio/host-tests -DIDF_PATH="$GITHUB_WORKSPACE/.pio/test-idf"
+          cmake --build .pio/host-tests
+          ctest --test-dir .pio/host-tests --output-on-failure
+      - name: Type-check and run Vitest
+        env:
+          SETTINGS_CONSOLE_TEST_BIN: ${{ github.workspace }}/.pio/host-tests/settings_console_test
+        run: |
+          pnpm --filter @pubmote/firmware-tool typecheck
+          pnpm --filter @pubmote/firmware-tool test:typecheck
+          pnpm --filter @pubmote/firmware-tool test
+      - name: Lint web tool
+        run: pnpm --filter @pubmote/firmware-tool lint
+      - name: Build web tool
+        run: pnpm --filter @pubmote/firmware-tool build

@@ -12,6 +12,7 @@ interface DropdownOption {
 }
 
 interface DropdownProps {
+  id?: string;
   options: DropdownOption[];
   value: string | string[];
   onChange: (value: string | string[]) => void;
@@ -42,6 +43,7 @@ const TRIGGER_GAP = 4;
 const MIN_DROP_HEIGHT = 160;
 
 export function Dropdown({
+  id,
   options,
   value,
   onChange,
@@ -212,6 +214,7 @@ export function Dropdown({
   return (
     <div className={`relative ${width === "fixed" ? "w-45" : ""} ${className}`}>
       <button
+        id={id}
         ref={triggerRef}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}

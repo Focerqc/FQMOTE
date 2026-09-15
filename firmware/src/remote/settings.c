@@ -1,4 +1,5 @@
 #include "settings.h"
+#include "settings_api.h"
 #include "config.h"
 #include "connection.h"
 #include "display.h"
@@ -445,78 +446,15 @@ bool is_pocket_mode_enabled() {
   return device_settings.pocket_mode == POCKET_MODE_ENABLED;
 }
 
-// Dropdown option labels. Each table is indexed by its enum value and asserted
-// against that enum's _COUNT, so extending an enum without adding a label fails
-// the build instead of silently shifting what the UI saves.
-#define DEFINE_SETTING_OPTIONS(fn_name, table, count_sentinel)                                                          \
-  _Static_assert(sizeof(table) / sizeof((table)[0]) == (count_sentinel), #table " out of sync with " #count_sentinel);  \
-  SettingOptions fn_name() {                                                                                           \
-    SettingOptions options = {.labels = table, .count = sizeof(table) / sizeof((table)[0])};                            \
-    return options;                                                                                                    \
-  }
-
-static const char *const DOUBLE_PRESS_LABELS[] = {"None", "Open menu"};
-DEFINE_SETTING_OPTIONS(settings_double_press_options, DOUBLE_PRESS_LABELS, DOUBLE_PRESS_ACTION_COUNT)
-
-static const char *const ROTATION_LABELS[] = {"None", "90 degrees", "180 degrees", "270 degrees"};
-DEFINE_SETTING_OPTIONS(settings_rotation_options, ROTATION_LABELS, SCREEN_ROTATION_COUNT)
-
-static const char *const AUTO_OFF_LABELS[] = {"Disabled",   "2 minutes",  "5 minutes",
-                                              "10 minutes", "20 minutes", "30 minutes"};
-DEFINE_SETTING_OPTIONS(settings_auto_off_options, AUTO_OFF_LABELS, AUTO_OFF_COUNT)
-
-static const char *const TEMP_UNITS_LABELS[] = {"Celsius", "Fahrenheit"};
-DEFINE_SETTING_OPTIONS(settings_temp_units_options, TEMP_UNITS_LABELS, TEMP_UNITS_COUNT)
-
-static const char *const DISTANCE_UNITS_LABELS[] = {"Kilometers", "Miles"};
-DEFINE_SETTING_OPTIONS(settings_distance_units_options, DISTANCE_UNITS_LABELS, DISTANCE_UNITS_COUNT)
-
-static const char *const STARTUP_SOUND_LABELS[] = {"Disabled", "Beep", "Melody"};
-DEFINE_SETTING_OPTIONS(settings_startup_sound_options, STARTUP_SOUND_LABELS, STARTUP_SOUND_COUNT)
-
 void save_device_settings() {
-  nvs_write_int(BL_LEVEL_KEY, device_settings.bl_level);
-  nvs_write_int(SCREEN_ROTATION_KEY, device_settings.screen_rotation);
-  nvs_write_int(AUTO_OFF_TIME_KEY, device_settings.auto_off_time);
-  nvs_write_int("temp_units", device_settings.temp_units);
-  nvs_write_int("distance_units", device_settings.distance_units);
-  nvs_write_int("startup_sound", device_settings.startup_sound);
-  nvs_write_int("theme_color", device_settings.theme_color);
-
-  nvs_write_int("battery_display", device_settings.battery_display);
-  nvs_write_int("sec_stat_disp", device_settings.secondary_stat_display);
-  nvs_write_int("pocket_mode", device_settings.pocket_mode);
-  nvs_write_int("stats_dp", device_settings.double_press_action);
-  nvs_write_int("hbm_mode", device_settings.hbm_mode);
-  nvs_write_int("led_mode", device_settings.led_mode);
+  esp_err_t result = settings_save_device_preferences();
+  if (result != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to save device settings: %s", esp_err_to_name(result));
+  }
 }
 
 esp_err_t save_wifi_ssid(const char *ssid) {
-  ESP_LOGI(TAG, "Saving Wi-Fi SSID: %s", ssid);
-  int ssid_length = strlen(ssid);
-
-  esp_err_t err = ESP_OK;
-
-  if (ssid_length > 32) {
-    ESP_LOGE(TAG, "SSID must be less than 33 characters");
-    return ESP_ERR_INVALID_ARG;
-  }
-
-  err = nvs_write_str("wifi_ssid", ssid);
-  if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error saving SSID! SSID: %s", ssid);
-    return err;
-  }
-
-  err = nvs_write_int("wifi_ssid_l", ssid_length);
-  if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error saving SSID length! Length: %d", ssid_length);
-    return err;
-  }
-
-  ESP_LOGI(TAG, "Wi-Fi credentials saved successfully.");
-
-  return ESP_OK;
+  return settings_save_string("wifi_ssid", ssid);
 }
 
 bool set_current_default_device_secret(uint32_t secret_code) {
@@ -535,36 +473,13 @@ bool set_current_default_device_secret(uint32_t secret_code) {
 }
 
 esp_err_t save_wifi_password(const char *password) {
-  ESP_LOGI(TAG, "Saving Wi-Fi password: %s", password);
-  int password_length = strlen(password);
-  esp_err_t err = ESP_OK;
-
-  if (password_length > 64) {
-    ESP_LOGE(TAG, "SSID must be less than 65 characters");
-    return ESP_ERR_INVALID_ARG;
-  }
-
-  err = nvs_write_str("wifi_password", password);
-  if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error saving password! Password: %s", password);
-    return err;
-  }
-
-  err = nvs_write_int("wifi_key_l", password_length);
-  if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error saving password length! Length: %d", password_length);
-    return err;
-  }
-
-  ESP_LOGI(TAG, "Wi-Fi credentials saved successfully.");
-
-  return ESP_OK;
+  return settings_save_string("wifi_password", password);
 }
 
 char *get_wifi_ssid() {
   int ssid_length = 0;
   esp_err_t err = nvs_read_int("wifi_ssid_l", (uint32_t *)&ssid_length);
-  if (err != ESP_OK || ssid_length <= 0 || ssid_length > 32) {
+  if (err != ESP_OK || ssid_length <= 0 || ssid_length > WIFI_SSID_MAX_BYTES) {
     ESP_LOGE(TAG, "Error reading SSID length: %s", esp_err_to_name(err));
     return NULL;
   }
@@ -577,7 +492,7 @@ char *get_wifi_ssid() {
     return NULL;
   }
 
-  static char final_ssid[33]; // Static to ensure it remains valid after function returns
+  static char final_ssid[WIFI_SSID_MAX_BYTES + 1]; // Static to ensure it remains valid after function returns
   if (required_size > sizeof(final_ssid)) {
     ESP_LOGE(TAG, "SSID size exceeds buffer size!");
     return NULL;
@@ -591,7 +506,7 @@ char *get_wifi_ssid() {
 char *get_wifi_password() {
   int password_length = 0;
   esp_err_t err = nvs_read_int("wifi_key_l", (uint32_t *)&password_length);
-  if (err != ESP_OK || password_length <= 0 || password_length > 64) {
+  if (err != ESP_OK || password_length <= 0 || password_length > WIFI_PASSWORD_MAX_BYTES) {
     ESP_LOGE(TAG, "Error reading password length: %s", esp_err_to_name(err));
     return NULL;
   }
@@ -604,7 +519,7 @@ char *get_wifi_password() {
     return NULL;
   }
 
-  static char final_password[65]; // Static to ensure it remains valid after function returns
+  static char final_password[WIFI_PASSWORD_MAX_BYTES + 1]; // Static to ensure it remains valid after function returns
   if (required_size > sizeof(final_password)) {
     ESP_LOGE(TAG, "Password size exceeds buffer size!");
     return NULL;
@@ -683,13 +598,6 @@ void input_pins_load_defaults(InputPinSettings *out) {
 #if JOYSTICK_BUTTON_ENABLED
   out->btn1_gpio = (int8_t)PRIMARY_BUTTON;
 #endif
-}
-
-void save_input_pins() {
-  nvs_write_int("js_x_gpio", (uint32_t)(int32_t)input_pin_settings.js_x_gpio);
-  nvs_write_int("js_y_gpio", (uint32_t)(int32_t)input_pin_settings.js_y_gpio);
-  nvs_write_int("btn1_gpio", (uint32_t)(int32_t)input_pin_settings.btn1_gpio);
-  nvs_write_int("btn1_level", input_pin_settings.btn1_active_level ? 1 : 0);
 }
 
 void reset_axis_calibration(bool reset_x, bool reset_y) {

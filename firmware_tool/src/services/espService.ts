@@ -52,6 +52,9 @@ const getEspLogInfo = (
   data: string;
   type: LogEntry["type"];
 } => {
+  // JSON frames already escape control characters. Preserve their Unicode data
+  // rather than applying terminal text cleanup to credentials and labels.
+  if (data.startsWith("{")) return { data: data.trimEnd(), type: "info" };
   // Convert carriage returns to newlines for proper display
   const normalizedData = data.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const cleanedData = removeAnsiEscapeCodes(normalizedData.trimEnd());
@@ -70,9 +73,14 @@ export class ESPService {
   private espLoader: ESPLoader | null = null;
   private terminal?: TerminalService;
   private isConnecting: boolean = false;
+  private bootloaderReady = false;
+  private isFlashing = false;
+  private commandGeneration = 0;
+  private commandWrites: Promise<void> = Promise.resolve();
   private monitorSerial: boolean = false;
   private logBuffer: string = "";
-  private port: any = null;
+  private logDecoder = new TextDecoder();
+  private port: SerialPort | null = null;
 
   private logListeners: Array<LogListener> = [(d, t) => {
     this.log(
@@ -149,7 +157,7 @@ export class ESPService {
     if (typeof data === "string") {
       this.logBuffer += data;
     } else {
-      this.logBuffer += new TextDecoder().decode(data);
+      this.logBuffer += this.logDecoder.decode(data, { stream: true });
     }
 
     // Process complete lines
@@ -161,6 +169,9 @@ export class ESPService {
       const logInfo = getEspLogInfo(line);
       if (logInfo.data) {
         this.emitToListeners(logInfo.data, logInfo.type);
+        // Settings values may contain words such as "rst:" or "Backtrace:";
+        // JSON payloads are data, not reboot/crash diagnostics.
+        if (logInfo.data.startsWith("{")) continue;
 
         // Check for backtrace
         if (logInfo.data.includes("Backtrace:")) {
@@ -239,7 +250,11 @@ export class ESPService {
         return true; // Mark log as handled
       };
       this.addLogListener(versionLogListener);
-      this.sendCommand("version")
+      this.sendCommand("version").catch((error) => {
+        clearTimeout(timeoutId);
+        this.removeLogListener(versionLogListener);
+        reject(error);
+      });
     });
   }
 
@@ -269,7 +284,11 @@ export class ESPService {
       };
 
       this.addLogListener(coreDumpListener);
-      this.sendCommand("coredump_info");
+      this.sendCommand("coredump_info").catch(() => {
+        clearTimeout(timeoutId);
+        this.removeLogListener(coreDumpListener);
+        resolve(false);
+      });
     });
   }
 
@@ -289,6 +308,8 @@ export class ESPService {
 
     try {
       this.isConnecting = true;
+      ++this.commandGeneration;
+      this.bootloaderReady = false;
       this.log("Requesting serial port...");
 
       if (!navigator.serial) {
@@ -315,10 +336,6 @@ export class ESPService {
 
       const loader = new ESPLoader(loaderOptions);
 
-      // ... (existing loader.main(), loader.sync(), chip info reading ...)
-      // I need to keep the context lines for the replace, so I will target the specific block I'm changing
-      // But wait, the previous tool call modified the file, line numbers might shifted.
-      // I will rely on the Context match.
       await loader.main();
       await loader.sync();
 
@@ -356,10 +373,10 @@ export class ESPService {
       let hasCoredump: boolean = false;
 
       if (!hasFirmware) {
-        // Fresh chip: keep the loader ready in bootloader mode. Do NOT reboot
-        // into normal mode. flash() re-enters the bootloader on its own, so the
-        // device is ready for a first-time install right away.
+        // Reuse this synchronized stub for the first flash. Resetting a blank
+        // ESP32-S3 can drop its native USB connection before it can reconnect.
         this.espLoader = loader;
+        this.bootloaderReady = true;
         this.log(
           "No firmware detected. Device is in bootloader mode and ready for a first-time install.",
           "success"
@@ -449,24 +466,6 @@ export class ESPService {
     }
   }
 
-  private async readResponse(timeout = 1000): Promise<string> {
-    let response = "";
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < timeout) {
-      const data = await this.espLoader?.transport.rawRead(timeout);
-      if (data) {
-        response += data;
-        if (response.includes("\n")) {
-          break;
-        }
-      }
-      await delay(10);
-    }
-
-    return response;
-  }
-
   private encodeCommand(command: string): Uint8Array {
     const encoder = new TextEncoder();
     return encoder.encode(command + "\n");
@@ -477,8 +476,24 @@ export class ESPService {
       throw new Error("Device not connected");
     }
 
+    if (this.bootloaderReady || this.isFlashing) {
+      throw new Error("Device is in bootloader mode. Install firmware before using console commands.");
+    }
+
+    const loader = this.espLoader;
+    const generation = this.commandGeneration;
+    // Web Serial permits one writer at a time. Keep whole commands ordered,
+    // including requests from different tabs and repeated mount effects.
+    const write = this.commandWrites.then(async () => {
+      if (this.espLoader !== loader || generation !== this.commandGeneration) {
+        throw new Error("Connection changed before the command could be sent");
+      }
+      await loader.transport.write(this.encodeCommand(command));
+    });
+    // A failed write must reject its caller without blocking later commands.
+    this.commandWrites = write.catch(() => {});
     try {
-      await this.espLoader.transport.write(this.encodeCommand(command));
+      await write;
       if (!silent) {
         this.log(`Sent command: ${command}`, "info");
       }
@@ -496,21 +511,34 @@ export class ESPService {
     status: string;
     progress: number;
   }) => void): Promise<void> {
+    if (this.isFlashing) {
+      throw new Error("Firmware flash already in progress");
+    }
     if (!this.espLoader) {
       throw new Error("Not connected to device");
     }
 
+    const loader = this.espLoader;
+    this.isFlashing = true;
+    ++this.commandGeneration;
     try {
+      await this.commandWrites;
       this.removeSerialMonitor();
-      await delay(200); // Give device time to boot
-      await this.espLoader.transport.disconnect();
-      this.log("Rebooting into bootloader...");
-      await this.espLoader.main();
-      await this.espLoader.sync();
+      if (this.bootloaderReady) {
+        this.log("Using existing bootloader connection...");
+      } else {
+        await delay(200); // Let the serial monitor stop before closing its port.
+        await loader.transport.disconnect();
+        this.log("Rebooting into bootloader...");
+        await loader.main();
+        await loader.sync();
+        if (this.espLoader !== loader) throw new Error("Device disconnected while entering bootloader");
+        this.bootloaderReady = true;
+      }
 
       if (eraseFlash) {
         this.log("Erasing flash...");
-        await this.espLoader.eraseFlash();
+        await loader.eraseFlash();
       }
 
 
@@ -549,7 +577,7 @@ export class ESPService {
 
 
       this.log("Writing firmware...");
-      await this.espLoader.writeFlash({
+      await loader.writeFlash({
         fileArray: files.map(({ data, address }) => ({ data, address })),
         flashSize: "keep",
         eraseAll: false, // Handled above
@@ -569,15 +597,19 @@ export class ESPService {
 
       this.log("Flash complete", "success");
       this.log("Resetting device...");
-      await this.espLoader.hardReset();
+      this.bootloaderReady = false;
+      await loader.hardReset();
       this.log("Device reset and ready", "success");
     } catch (error) {
+      this.bootloaderReady = false;
       this.log(
         `Flash failed: ${error instanceof Error ? error.message : "Unknown error"
         }`,
         "error"
       );
       throw error;
+    } finally {
+      this.isFlashing = false;
     }
   }
 
@@ -595,6 +627,8 @@ export class ESPService {
   }
 
   addSerialMonitor() {
+    this.logBuffer = "";
+    this.logDecoder = new TextDecoder();
     const monitor = async () => {
       while (this.monitorSerial) {
         const val = await this.espLoader!.transport.rawRead();
@@ -615,23 +649,27 @@ export class ESPService {
   }
 
   async disconnect(): Promise<void> {
+    ++this.commandGeneration;
+    const loader = this.espLoader;
+    const port = this.port;
+    this.espLoader = null;
+    this.port = null;
+    this.bootloaderReady = false;
     this.removeSerialMonitor();
-    if (this.port) {
-      this.port.removeEventListener('disconnect', this.handlePortDisconnect);
+    if (port) {
+      port.removeEventListener('disconnect', this.handlePortDisconnect);
     }
 
-    if (this.espLoader) {
+    if (loader) {
       try {
-        await this.espLoader.transport.disconnect();
-      } catch (error) {
+        await this.commandWrites;
+        await loader.transport.disconnect();
+      } catch {
         // Ignore disconnect errors
       }
-      this.espLoader = null;
       this.log("Disconnected from device");
     }
 
-    // safe to null port now
-    this.port = null;
   }
 
   // Execute a command silently and capture output
@@ -660,7 +698,11 @@ export class ESPService {
       };
 
       this.addSilentListener(listener);
-      this.sendCommand(command, true);
+      this.sendCommand(command, true).catch((error) => {
+        clearTimeout(timeoutId);
+        this.removeSilentListener(listener);
+        reject(error);
+      });
     });
   }
 

@@ -1,5 +1,3 @@
-// DeviceInfo.tsx
-import React from "react";
 import { Box, Tag, Cpu, Wifi } from "lucide-react";
 import { Badge } from './ui/Badge';
 import { DeviceInfoData, FlashProgress } from "../types";

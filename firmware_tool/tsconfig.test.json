@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "types": ["node", "w3c-web-serial"]
+  },
+  "include": ["tests/**/*.ts", "src/services/settingsProtocol.ts"]
+}
