@@ -27,9 +27,16 @@ export component RoundStats inherits Rectangle {
     in property <string> secondary-stat-left-value: "";
     in property <string> secondary-stat-left-label: "";
     in property <int> vehicle-type: 0;
+    in property <int> stats-ui-style: 0;
 
     callback secondary-stat-left-clicked();
     callback board-battery-clicked();
+
+    property <bool> is-shifted: root.stats-ui-style == 1;
+    property <color> text-color: !root.is-shifted ? Theme.text : (root.duty-fraction > 0.65 ? #ffffff : #000000);
+    property <color> text-dim-color: !root.is-shifted ? Theme.text-dim : (root.duty-fraction > 0.65 ? #ffffffb0 : #00000088);
+    property <color> track-color: !root.is-shifted ? Theme.track : (root.duty-fraction > 0.65 ? rgba(255, 255, 255, 0.25) : rgba(0, 0, 0, 0.20));
+    property <brush> speed-indicator-color: !root.is-shifted ? Theme.accent : (root.duty-fraction > 0.65 ? #ffffff : #000000);
 
     property <brush> duty-color: root.duty-fraction >= 0.90 ? Theme.color-critical :
         root.duty-fraction >= 0.80 ? Theme.color-warning :
@@ -48,8 +55,8 @@ export component RoundStats inherits Rectangle {
         thickness: 12px * Theme.scale;
         start-angle: 140deg;
         span-angle: 260deg;
-        track-color: Theme.track;
-        indicator-color: Theme.accent;
+        track-color: root.track-color;
+        indicator-color: root.speed-indicator-color;
         value: root.speed-fraction;
     }
 
@@ -62,7 +69,7 @@ export component RoundStats inherits Rectangle {
         thickness: 8px * Theme.scale;
         start-angle: 140deg;
         span-angle: 260deg;
-        track-color: Theme.track;
+        track-color: root.track-color;
         indicator-color: root.duty-color;
         reverse: true;
         value: root.duty-fraction;
@@ -113,6 +120,8 @@ export component RoundStats inherits Rectangle {
                 SpeedDisplay {
                 speed: root.speed;
                 speed-unit: root.speed-unit;
+                text-color: root.text-color;
+                unit-color: root.text-dim-color;
             }
 
             HorizontalLayout {

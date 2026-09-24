@@ -41,6 +41,9 @@ DEFINE_SETTING_OPTIONS(settings_distance_units_options, DISTANCE_UNITS_LABELS, D
 static const char *const STARTUP_SOUND_LABELS[] = {"Disabled", "Beep", "Melody"};
 DEFINE_SETTING_OPTIONS(settings_startup_sound_options, STARTUP_SOUND_LABELS, STARTUP_SOUND_COUNT)
 
+static const char *const STATS_UI_STYLE_LABELS[] = {"Classic", "Color shift", "Solid duty"};
+DEFINE_SETTING_OPTIONS(settings_stats_ui_style_options, STATS_UI_STYLE_LABELS, STATS_UI_COUNT)
+
 static const char *const HBM_LABELS[] = {"Off", "On", "Raised"};
 _Static_assert(sizeof(HBM_LABELS) / sizeof(HBM_LABELS[0]) == HBM_MODE_COUNT, "HBM_LABELS out of sync");
 static SettingOptions hbm_options(void) {
@@ -87,6 +90,7 @@ DEFINE_DEVICE_ACCESSORS(distance_units, distance_units, DistanceUnits)
 DEFINE_DEVICE_ACCESSORS(startup_sound, startup_sound, StartupSoundOptions)
 DEFINE_DEVICE_ACCESSORS(stats_dp, double_press_action, StatsDoublePressAction)
 DEFINE_DEVICE_ACCESSORS(led_mode, led_mode, LedModeOptions)
+DEFINE_DEVICE_ACCESSORS(stats_ui_style, stats_ui_style, StatsUiStyle)
 
 typedef struct {
   CalibrationSettings calibration;
@@ -266,6 +270,13 @@ static const SettingDescriptor fields[] = {
      .read_number = read_hbm_mode,
      .apply_number = apply_hbm_mode,
      .options = hbm_options},
+    {.key = "stats_ui_style",
+     .label = "UI style",
+     .group = "Display",
+     .description = "Stats screen visual theme and layout style",
+     .read_number = read_stats_ui_style,
+     .apply_number = apply_stats_ui_style,
+     .options = settings_stats_ui_style_options},
     {.key = "auto_off_time",
      .label = "Auto-off timeout",
      .group = "Power",

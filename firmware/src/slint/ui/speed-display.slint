@@ -5,6 +5,8 @@ export component SpeedDisplay inherits Rectangle {
     in property <string> speed-unit: "KPH";
     in property <bool> center-align: true;
     in property <length> font-size: Theme.font-64;
+    in property <color> text-color: Theme.text;
+    in property <color> unit-color: Theme.text-dim;
 
     height: root.font-size;
     width: 100%;
@@ -14,7 +16,7 @@ export component SpeedDisplay inherits Rectangle {
         width: self.preferred-width;
         height: self.preferred-height;
         text: root.speed;
-        color: Theme.text;
+        color: root.text-color;
         font-size: root.font-size;
         font-weight: Theme.w-semibold;
         vertical-alignment: bottom;
@@ -28,7 +30,7 @@ export component SpeedDisplay inherits Rectangle {
         padding-bottom: 8px * Theme.scale;
         Text {
             text: root.speed-unit;
-            color: Theme.text-dim;
+            color: root.unit-color;
             font-size: Theme.font-14;
             font-weight: Theme.w-semibold;
             horizontal-alignment: left;

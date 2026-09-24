@@ -56,7 +56,6 @@ extern "C"
   char *get_wifi_ssid();
 
   char *get_wifi_password();
-
 #define DEFAULT_PAIRING_SECRET_CODE -1
   // The assignment baked in at build time
   void input_pins_load_defaults(InputPinSettings *out);
@@ -70,6 +69,7 @@ extern "C"
   SettingOptions settings_temp_units_options();
   SettingOptions settings_distance_units_options();
   SettingOptions settings_startup_sound_options();
+  SettingOptions settings_stats_ui_style_options();
 
   extern CalibrationSettings calibration_settings;
   extern InputPinSettings input_pin_settings;

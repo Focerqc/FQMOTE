@@ -312,6 +312,7 @@ extern "C" void setup_stats_properties() {
 
   if (get_slint_window()) {
     const auto &state = get_slint_window()->global<UiState>();
+    state.set_stats_ui_index(device_settings.stats_ui_style);
     state.on_board_battery_clicked([]() {
       // Cycle board battery format
       if (device_settings.battery_display == BATTERY_DISPLAY_PERCENT) {

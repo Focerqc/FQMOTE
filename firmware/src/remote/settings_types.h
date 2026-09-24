@@ -95,6 +95,13 @@ typedef enum {
   DOUBLE_PRESS_ACTION_COUNT // Sentinel - keep last
 } StatsDoublePressAction;
 
+typedef enum {
+  STATS_UI_CLASSIC,
+  STATS_UI_COLOR_SHIFT,
+  STATS_UI_SOLID_COLOR,
+  STATS_UI_COUNT // Sentinel - keep last
+} StatsUiStyle;
+
 typedef struct {
   uint8_t bl_level;
   ScreenRotation screen_rotation;
@@ -110,6 +117,7 @@ typedef struct {
   StatsDoublePressAction double_press_action;
   HbmModeOptions hbm_mode;
   LedModeOptions led_mode;
+  StatsUiStyle stats_ui_style;
 } DeviceSettings;
 
 // The option list backing a settings dropdown. `labels` is indexed by the

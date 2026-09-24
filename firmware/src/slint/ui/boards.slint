@@ -49,7 +49,7 @@ export component BoardsScreen inherits Rectangle {
             }
 
             if root.boards.length > 0: Flickable {
-                viewport-height: boards-layout.min-height;
+                content-height: boards-layout.min-height;
                 boards-layout := VerticalLayout {
                     // Padding must live on the layout (not the parent
                     // Rectangle) to actually constrain the rows on screen

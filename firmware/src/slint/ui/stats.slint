@@ -18,9 +18,31 @@
 import { Theme } from "theme.slint";
 import { RoundStats } from "round-stats.slint";
 import { SquareStats } from "square-stats.slint";
+import { SolidStats } from "solid-stats.slint";
 
 export component StatsScreen inherits Rectangle {
+    pure function get-duty-hue(duty: float) -> angle {
+        if (duty <= 0.40) {
+            return 135deg;
+        }
+        if (duty <= 0.60) {
+            let t = (duty - 0.40) / 0.20;
+            return (135.0 - t * 80.0) * 1deg;
+        }
+        if (duty <= 0.75) {
+            let t = (duty - 0.60) / 0.15;
+            return (55.0 - t * 55.0) * 1deg;
+        }
+        return 0deg;
+    }
+
+    pure function get-duty-color(duty: float) -> color {
+        let h = root.get-duty-hue(duty);
+        return Colors.hsv(h, 0.95, 0.90);
+    }
+
     in property <bool> square-mode: Theme.is-square-mode;
+    in property <int> stats-ui-style: 0;        // 0 = Classic, 1 = Color Shift, 2 = Solid Duty
     in property <string> speed: "0.0";
     in property <string> speed-unit: "KPH";
     in property <float> speed-fraction: 0;       // 0..1 of the speed dial
@@ -46,7 +68,7 @@ export component StatsScreen inherits Rectangle {
 
     callback swiped-down;
 
-    background: Theme.bg;
+    background: root.stats-ui-style == 0 ? Theme.bg : get-duty-color(root.duty-fraction);
 
     // Swipe down detection
     TouchArea {
@@ -73,7 +95,7 @@ export component StatsScreen inherits Rectangle {
         }
     }
 
-    if !root.square-mode : RoundStats {
+    if root.stats-ui-style == 2 : SolidStats {
         width: 100%;
         height: 100%;
         speed: root.speed;
@@ -99,7 +121,34 @@ export component StatsScreen inherits Rectangle {
         board-battery-clicked => { root.board-battery-clicked(); }
     }
 
-    if root.square-mode : SquareStats {
+    if root.stats-ui-style != 2 && !root.square-mode : RoundStats {
+        width: 100%;
+        height: 100%;
+        stats-ui-style: root.stats-ui-style;
+        speed: root.speed;
+        speed-unit: root.speed-unit;
+        speed-fraction: root.speed-fraction;
+        duty-fraction: root.duty-fraction;
+        left-pad: root.left-pad;
+        right-pad: root.right-pad;
+        remote-battery: root.remote-battery;
+        remote-charging: root.remote-charging;
+        is-connected: root.is-connected;
+        connection-state-label: root.connection-state-label;
+        board-battery: root.board-battery;
+        rssi: root.rssi;
+        searching: root.searching;
+        pocket-mode-active: root.pocket-mode-active;
+        lights-on: root.lights-on;
+        board-state-message: root.board-state-message;
+        vehicle-type: root.vehicle-type;
+        secondary-stat-left-value: root.secondary-stat-left-value;
+        secondary-stat-left-label: root.secondary-stat-left-label;
+        secondary-stat-left-clicked => { root.secondary-stat-left-clicked(); }
+        board-battery-clicked => { root.board-battery-clicked(); }
+    }
+
+    if root.stats-ui-style != 2 && root.square-mode : SquareStats {
         width: 100%;
         height: 100%;
         speed: root.speed;

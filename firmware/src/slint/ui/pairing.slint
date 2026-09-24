@@ -103,7 +103,7 @@ export component PairingScreen inherits Rectangle {
                 }
 
                 if root.scan-error == "" && root.discovered-devices.length > 0: Flickable {
-                    viewport-height: devices-layout.min-height;
+                    content-height: devices-layout.min-height;
                     devices-layout := VerticalLayout {
                         spacing: 6px * Theme.scale;
                         alignment: start;

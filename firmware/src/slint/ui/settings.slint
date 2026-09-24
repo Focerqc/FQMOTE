@@ -48,12 +48,14 @@ export component SettingsScreen inherits Rectangle {
     in-out property <int> temp-units-index: 0;
     in-out property <int> distance-units-index: 0;
     in-out property <int> startup-sound-index: 0;
+    in-out property <int> stats-ui-index: 0;
     in property <[string]> double-press-options: [];
     in property <[string]> rotation-options: [];
     in property <[string]> auto-off-options: [];
     in property <[string]> temp-units-options: [];
     in property <[string]> distance-units-options: [];
     in property <[string]> startup-sound-options: [];
+    in property <[string]> stats-ui-options: [];
 
     in-out property <float> theme-h: 0;
     in-out property <float> theme-s: 100;
@@ -63,7 +65,7 @@ export component SettingsScreen inherits Rectangle {
     background: Theme.bg;
 
     property <int> current-page: 0;
-    property <int> total-pages: 8;
+    property <int> total-pages: 9;
 
     VerticalLayout {
         Pager {
@@ -95,6 +97,15 @@ export component SettingsScreen inherits Rectangle {
                 ComboBox {
                     model: root.rotation-options;
                     current-index <=> root.rotation-index;
+                }
+            }
+
+            SettingPage {
+                width: root.width;
+                caption: "Stats screen style";
+                ComboBox {
+                    model: root.stats-ui-options;
+                    current-index <=> root.stats-ui-index;
                 }
             }
 

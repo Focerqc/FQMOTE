@@ -42,6 +42,7 @@ extern "C" void setup_settings_properties() {
     state.set_temp_units_options(build_options_model(settings_temp_units_options()));
     state.set_distance_units_options(build_options_model(settings_distance_units_options()));
     state.set_startup_sound_options(build_options_model(settings_startup_sound_options()));
+    state.set_stats_ui_options(build_options_model(settings_stats_ui_style_options()));
 
     state.set_brightness((float)device_settings.bl_level);
     state.set_double_press_index(device_settings.double_press_action);
@@ -50,6 +51,7 @@ extern "C" void setup_settings_properties() {
     state.set_temp_units_index(device_settings.temp_units);
     state.set_distance_units_index(device_settings.distance_units);
     state.set_startup_sound_index(device_settings.startup_sound);
+    state.set_stats_ui_index(device_settings.stats_ui_style);
 
     HSVColor hsv = rgb_to_hsv(device_settings.theme_color);
     state.set_theme_h(hsv.h);
@@ -141,6 +143,11 @@ extern "C" void handle_settings_save() {
     index = state.get_startup_sound_index();
     if (index_in_range(index, settings_startup_sound_options().count)) {
       device_settings.startup_sound = (StartupSoundOptions)index;
+    }
+
+    index = state.get_stats_ui_index();
+    if (index_in_range(index, settings_stats_ui_style_options().count)) {
+      device_settings.stats_ui_style = (StatsUiStyle)index;
     }
 
     float h = state.get_theme_h();

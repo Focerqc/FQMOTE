@@ -35,6 +35,7 @@ static const PocketModeOptions DEFAULT_POCKET_MODE = POCKET_MODE_DISABLED;
 static const StatsDoublePressAction DEFAULT_DOUBLE_PRESS_ACTION = DOUBLE_PRESS_ACTION_NONE;
 // Solid theme colour - the behaviour before led_mode was configurable
 static const LedModeOptions DEFAULT_LED_MODE = LED_MODE_SOLID;
+static const StatsUiStyle DEFAULT_STATS_UI_STYLE = STATS_UI_CLASSIC;
 
 DeviceSettings device_settings = {
     .bl_level = BL_LEVEL_DEFAULT,
@@ -50,6 +51,7 @@ DeviceSettings device_settings = {
     .double_press_action = DEFAULT_DOUBLE_PRESS_ACTION,
     .hbm_mode = HBM_MODE_OFF,
     .led_mode = DEFAULT_LED_MODE,
+    .stats_ui_style = DEFAULT_STATS_UI_STYLE,
 };
 
 CalibrationSettings calibration_settings = {
@@ -725,6 +727,12 @@ esp_err_t settings_init() {
       nvs_read_int("led_mode", &temp_setting_value) == ESP_OK ? (LedModeOptions)temp_setting_value : DEFAULT_LED_MODE;
   if (device_settings.led_mode >= LED_MODE_COUNT) {
     device_settings.led_mode = DEFAULT_LED_MODE;
+  }
+
+  device_settings.stats_ui_style =
+      nvs_read_int("stats_ui_style", &temp_setting_value) == ESP_OK ? (StatsUiStyle)temp_setting_value : DEFAULT_STATS_UI_STYLE;
+  if (device_settings.stats_ui_style >= STATS_UI_COUNT) {
+    device_settings.stats_ui_style = DEFAULT_STATS_UI_STYLE;
   }
 
   calibration_settings.expo = STICK_EXPO;

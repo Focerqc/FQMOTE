@@ -1,0 +1,185 @@
+import { Theme } from "theme.slint";
+import { BatteryDisplay } from "battery-display.slint";
+import { StatusRow } from "status-row.slint";
+import { SpeedDisplay } from "speed-display.slint";
+import { AppChip } from "app-chip.slint";
+import { SecondaryStat } from "secondary-stat.slint";
+
+export component SolidStats inherits Rectangle {
+    in property <string> speed: "0.0";
+    in property <string> speed-unit: "KPH";
+    in property <float> speed-fraction: 0;
+    in property <float> duty-fraction: 0;
+    in property <bool> left-pad: false;
+    in property <bool> right-pad: false;
+    in property <int> remote-battery: 100;
+    in property <int> rssi: -100;
+    in property <bool> searching: false;
+    in property <bool> remote-charging: false;
+    in property <bool> is-connected: false;
+    in property <string> connection-state-label: "Disconnected";
+    in property <string> board-battery: "0%";
+    in property <bool> pocket-mode-active: false;
+    in property <bool> lights-on: false;
+    in property <string> board-state-message: "";
+    in property <string> secondary-stat-left-value: "";
+    in property <string> secondary-stat-left-label: "";
+    in property <int> vehicle-type: 0;
+
+    callback secondary-stat-left-clicked();
+    callback board-battery-clicked();
+
+    property <color> text-color: root.duty-fraction > 0.65 ? #ffffff : #000000;
+    property <color> text-dim-color: root.duty-fraction > 0.65 ? #ffffffcc : #00000099;
+    property <color> pill-bg: root.duty-fraction > 0.65 ? rgba(255, 255, 255, 0.20) : rgba(0, 0, 0, 0.15);
+
+    VerticalLayout {
+        padding-left: 24px * Theme.scale;
+        padding-right: 24px * Theme.scale;
+        padding-top: 32px * Theme.scale;
+        padding-bottom: 16px * Theme.scale;
+        alignment: space-between;
+
+        // Top Header
+        VerticalLayout {
+            width: 100%;
+            alignment: end;
+            spacing: 6px * Theme.scale;
+
+            HorizontalLayout {
+                alignment: center;
+                BatteryDisplay {
+                    battery: root.remote-battery;
+                    charging: root.remote-charging;
+                    show-percent: false;
+                }
+            }
+
+            HorizontalLayout {
+                alignment: center;
+                Rectangle {
+                    height: 24px * Theme.scale;
+                    border-radius: self.height / 2;
+                    background: root.pill-bg;
+                    HorizontalLayout {
+                        padding-left: 12px * Theme.scale;
+                        padding-right: 12px * Theme.scale;
+                        alignment: center;
+                        Text {
+                            text: root.board-state-message != "" ? root.board-state-message : root.connection-state-label;
+                            color: root.text-color;
+                            font-size: Theme.font-10;
+                            font-weight: Theme.w-semibold;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Center / Main Speed & Duty readout
+        VerticalLayout {
+            width: 100%;
+            alignment: center;
+            spacing: 6px * Theme.scale;
+
+            SpeedDisplay {
+                speed: root.speed;
+                speed-unit: root.speed-unit;
+                text-color: root.text-color;
+                unit-color: root.text-dim-color;
+                font-size: Theme.font-64;
+            }
+
+            // Duty cycle prominent indicator bar & pill
+            HorizontalLayout {
+                alignment: center;
+                Rectangle {
+                    height: 30px * Theme.scale;
+                    border-radius: 15px * Theme.scale;
+                    background: root.pill-bg;
+                    padding-left: 14px * Theme.scale;
+                    padding-right: 14px * Theme.scale;
+
+                    HorizontalLayout {
+                        spacing: 12px * Theme.scale;
+                        alignment: center;
+
+                        TouchArea {
+                            clicked => { root.secondary-stat-left-clicked(); }
+                            HorizontalLayout {
+                                spacing: 4px * Theme.scale;
+                                alignment: center;
+                                Text {
+                                    text: root.secondary-stat-left-value != "" ? root.secondary-stat-left-value : Math.round(root.duty-fraction * 100) + "%";
+                                    color: root.text-color;
+                                    font-size: Theme.font-14;
+                                    font-weight: Theme.w-semibold;
+                                    font-family: "JetBrains Mono";
+                                    vertical-alignment: center;
+                                }
+                                Text {
+                                    text: root.secondary-stat-left-label != "" ? root.secondary-stat-left-label : "DUTY";
+                                    color: root.text-dim-color;
+                                    font-size: Theme.font-11;
+                                    font-weight: Theme.w-medium;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+
+                        // Divider
+                        Rectangle {
+                            width: 1px;
+                            height: 14px * Theme.scale;
+                            background: root.text-dim-color;
+                            y: (parent.height - self.height) / 2;
+                        }
+
+                        TouchArea {
+                            clicked => { root.board-battery-clicked(); }
+                            HorizontalLayout {
+                                spacing: 4px * Theme.scale;
+                                alignment: center;
+                                Text {
+                                    text: root.board-battery;
+                                    color: root.text-color;
+                                    font-size: Theme.font-14;
+                                    font-weight: Theme.w-semibold;
+                                    font-family: "JetBrains Mono";
+                                    vertical-alignment: center;
+                                }
+                                Text {
+                                    text: "BATT";
+                                    color: root.text-dim-color;
+                                    font-size: Theme.font-11;
+                                    font-weight: Theme.w-medium;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Footer: Sensor pads & status row
+        VerticalLayout {
+            alignment: center;
+            spacing: 4px * Theme.scale;
+            padding-bottom: 8px * Theme.scale;
+
+            StatusRow {
+                is-connected: root.is-connected;
+                rssi: root.rssi;
+                searching: root.searching;
+                left-pad: root.left-pad;
+                right-pad: root.right-pad;
+                connection-state-label: root.connection-state-label;
+                pocket-mode-active: root.pocket-mode-active;
+                lights-on: root.lights-on;
+                is-onewheel: root.vehicle-type == 1;
+            }
+        }
+    }
+}

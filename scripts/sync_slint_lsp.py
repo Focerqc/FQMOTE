@@ -74,6 +74,8 @@ EDITORS = [
     (".vscode-insiders", "Code - Insiders"),
     (".cursor", "Cursor"),
     (".vscodium", "VSCodium"),
+    (".antigravity-ide", "Antigravity IDE"),
+    (".antigravity", "Antigravity"),
 ]
 
 
