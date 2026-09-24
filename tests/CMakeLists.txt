@@ -6,9 +6,7 @@ if(NOT EXISTS "${IDF_PATH}/components/json/cJSON/cJSON.c")
   message(FATAL_ERROR "Set IDF_PATH to an ESP-IDF checkout (including its cJSON submodule)")
 endif()
 
-# The firmware sources under test include config.h, settings.h and remoteinputs.h,
-# which pull in the whole device. Copy them next to empty stand-ins from shadow/:
-# a quoted include searches the including file's own directory first.
+# Stage the sources beside empty shadow/ headers; quoted includes search their own directory first.
 set(STAGED "${CMAKE_BINARY_DIR}/staged")
 set(FIRMWARE_REMOTE "${CMAKE_SOURCE_DIR}/../firmware/src/remote")
 foreach(src input_settings.c settings_api.c settings_console.c sleep_timer.c)

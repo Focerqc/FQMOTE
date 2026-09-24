@@ -72,8 +72,7 @@ test('rejects incompatible or malformed firmware payloads', () => {
   );
 });
 
-// Decode the quoted argument according to esp_console_split_argv's documented
-// escape rules. The C integration harness also exercises the real IDF splitter.
+// Undo esp_console_split_argv's escaping; the C harness covers the real splitter.
 test('JSON command preserves quotes, slashes, whitespace and Unicode', () => {
   const values = { text: '  "quoted" \\ slash\n\t é雪 😀  ' };
   const command = settingsSaveCommand(values);

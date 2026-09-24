@@ -4,10 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-// The console knows only command framing. All setting definitions, validation,
-// persistence and live application belong to the shared settings API.
-// Clients tag requests with an id that every reply echoes, so a late reply to
-// an abandoned request can't be mistaken for the current one.
+// Replies echo the request id so a late reply is never taken for a newer request.
 static bool valid_id(const char *id) {
   size_t length = 0;
   for (; id[length]; ++length) {

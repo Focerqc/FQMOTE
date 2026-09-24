@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { settingsValuesSchema, type SettingsMetadata } from './settingsProtocol';
 
-// The backup format is independent of the firmware version and field list.
 const backupSchema = z.object({
   format: z.literal('pubmote-settings'),
   version: z.literal(1),

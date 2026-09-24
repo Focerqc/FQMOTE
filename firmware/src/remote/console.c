@@ -267,8 +267,8 @@ static void console_start(void) {
   ESP_LOGI(TAG, "Initializing console");
   esp_console_repl_t *repl = NULL;
   esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
-  repl_config.task_stack_size = 6144;    // JSON parsing and metadata serialization
-  repl_config.max_cmdline_length = 2048; // Includes JSON and console escaping
+  repl_config.task_stack_size = 6144;    // cJSON parse and print
+  repl_config.max_cmdline_length = 2048; // Escaped JSON save command
   /* Prompt to be printed before each line.
    * This can be customized, made dynamic, etc.
    */

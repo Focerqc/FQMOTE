@@ -2,7 +2,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Shared by storage validation and the metadata exposed to clients.
 #define WIFI_SSID_MAX_BYTES 32
 #define WIFI_PASSWORD_MAX_BYTES 64
 

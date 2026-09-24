@@ -135,7 +135,7 @@ const SettingsPage: React.FC<unknown> = () => {
         if (!controller.signal.aborted) {
           const message = failure instanceof Error ? failure.message : 'Unable to load settings';
           setError(message);
-          // A storage failure can leave some values applied. Require a fresh read.
+          // A failed save can leave some values applied, so force a reload.
           if (save) {
             setMetadata(null);
             try {

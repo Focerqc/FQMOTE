@@ -5,8 +5,7 @@
 #include "settings_api.h"
 #include <string.h>
 
-// One NVS blob keeps a pin remap and its calibration in the same committed
-// version. Legacy per-key values remain untouched for migration/downgrades.
+// One blob, so a pin remap and its calibration reset are committed together.
 typedef struct {
   uint32_t version;
   InputPinSettings pins;

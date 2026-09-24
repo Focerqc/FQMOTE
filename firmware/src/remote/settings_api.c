@@ -38,7 +38,6 @@ DEFINE_SETTING_OPTIONS(settings_distance_units_options, DISTANCE_UNITS_LABELS, D
 static const char *const STARTUP_SOUND_LABELS[] = {"Disabled", "Beep", "Melody"};
 DEFINE_SETTING_OPTIONS(settings_startup_sound_options, STARTUP_SOUND_LABELS, STARTUP_SOUND_COUNT)
 
-// Capability-dependent options use the same labels as the on-device menu.
 static SettingOptions hbm_options(void) {
   static const char *labels[HBM_MODE_COUNT];
   for (int i = 0; i < HBM_MODE_COUNT; ++i) {
@@ -62,7 +61,7 @@ DEFINE_SETTING_OPTIONS(secondary_options, SECONDARY_LABELS, SECONDARY_STAT_DISTA
 static const char *const POCKET_LABELS[] = {"Disabled", "Enabled"};
 DEFINE_SETTING_OPTIONS(pocket_options, POCKET_LABELS, POCKET_MODE_ENABLED + 1)
 
-// Typed accessors avoid aliasing enum and byte-sized members through integers.
+// Typed accessors, so enum and byte members are never aliased through an int.
 #define DEFINE_DEVICE_ACCESSORS(key, member, type)                                                                     \
   static uint32_t read_##key(void) {                                                                                   \
     return device_settings.member;                                                                                     \
@@ -84,8 +83,6 @@ DEFINE_DEVICE_ACCESSORS(startup_sound, startup_sound, StartupSoundOptions)
 DEFINE_DEVICE_ACCESSORS(stats_dp, double_press_action, StatsDoublePressAction)
 DEFINE_DEVICE_ACCESSORS(led_mode, led_mode, LedModeOptions)
 
-// Shared settings API: field names, presentation, validation and storage
-// bindings. The tool builds its form and Zod schema from the emitted metadata.
 typedef struct {
   const char *key;
   const char *label;
@@ -244,7 +241,6 @@ static const SettingDescriptor fields[] = {
 };
 #define FIELD_COUNT (sizeof(fields) / sizeof(fields[0]))
 
-// Both typed firmware setters and JSON patches use this persistence path.
 int settings_save_string(const char *key, const char *value) {
   if (!key || !value) {
     return ESP_ERR_INVALID_ARG;
@@ -284,7 +280,6 @@ static bool allowed_number(const SettingDescriptor *field, double value) {
   return value == INPUT_PIN_DISABLED || (value >= 0 && value < 64 && (field->choices() & (1ULL << (int)value)));
 }
 
-// On-device saves and JSON patches share the same keys and validation.
 int settings_save_device_preferences(void) {
   for (size_t i = 0; i < FIELD_COUNT; ++i) {
     if (fields[i].read_number && !allowed_number(&fields[i], fields[i].read_number())) {
@@ -459,8 +454,7 @@ int settings_apply_json(const char *json, char *error_out, size_t error_size) {
   if (strlen(json) >= 2048) {
     return settings_error(error_out, error_size, "Settings payload too large");
   }
-  // cJSON strings are NUL-terminated: reject escaped NUL rather than silently
-  // truncating a credential or a field name. Skip escaped backslashes.
+  // cJSON strings end at NUL, so reject an escaped NUL instead of truncating.
   bool in_string = false;
   int depth = 0;
   for (const char *p = json; *p; ++p) {
@@ -474,8 +468,7 @@ int settings_apply_json(const char *json, char *error_out, size_t error_size) {
       in_string = !in_string;
     }
     else if (!in_string) {
-      // Only a flat object of scalar settings is supported. Bound parser stack
-      // use before handing input to cJSON's recursive descent parser.
+      // Only flat objects are valid; bound nesting before cJSON's recursive parser.
       if (*p == '[' || (*p == '{' && ++depth > 1)) {
         return settings_error(error_out, error_size, "Expected flat settings object");
       }
@@ -484,7 +477,7 @@ int settings_apply_json(const char *json, char *error_out, size_t error_size) {
       }
     }
   }
-  // Require the entire argument to parse; do not accept trailing garbage.
+  // Reject trailing garbage.
   cJSON *patch = cJSON_ParseWithOpts(json, NULL, true);
   const char *error = NULL;
   InputPinSettings pending = input_pin_settings;
@@ -536,7 +529,7 @@ int settings_apply_json(const char *json, char *error_out, size_t error_size) {
     }
   }
   char pin_error[128] = {0};
-  // Validate the entire patch before any persistence or live input changes.
+  // Validate the whole patch before persisting or applying anything.
   if (!error && pins_dirty && input_pins_validate(&pending, pin_error, sizeof(pin_error)) != ESP_OK) {
     error = pin_error;
   }

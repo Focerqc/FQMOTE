@@ -24,8 +24,6 @@ function lastId(write: { mock: { calls: unknown[][] } }) {
 
 function monitorChunks(service: ESPService, chunks: Uint8Array[]) {
   const rawRead = vi.fn(async () => chunks.shift());
-  // Supply only the serial transport; the production monitor still decodes,
-  // buffers, classifies and dispatches every received chunk.
   Object.assign(service, { espLoader: { transport: { rawRead } } });
   service.addSerialMonitor();
   return rawRead;
@@ -227,7 +225,6 @@ describe('console response ownership', () => {
       await vi.advanceTimersByTimeAsync(7001);
       expect(await first).toContain('No JSON settings response');
       expect(service.isConnected()).toBe(true);
-      // The queued request first sends a bare newline to get a fresh prompt.
       expect(write).toHaveBeenCalledTimes(2);
       expect(new TextDecoder().decode(write.mock.calls[1][0])).toBe('\n');
       await emit(service, 'pubconsole>'); // Late prompt of the timed-out command
@@ -256,7 +253,6 @@ describe('console response ownership', () => {
       await vi.advanceTimersByTimeAsync(3001);
       expect(await queued).toContain('Console busy');
       expect(service.isConnected()).toBe(true);
-      // Once the device prints a prompt again, commands flow normally.
       const later = service.executeCommand('version');
       await vi.advanceTimersByTimeAsync(0);
       expect(write).toHaveBeenCalledTimes(3);

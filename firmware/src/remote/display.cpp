@@ -410,8 +410,7 @@ extern "C" void apply_theme_settings() {
   theme.set_text_dim(slint::Color::from_rgb_uint8(154, 154, 154));
 }
 
-// Refresh controls before applying the final hardware state: the settings
-// screen's change callbacks can preview brightness, theme and LED colour.
+// Refresh controls first: their change callbacks preview brightness, theme and LED.
 extern "C" void display_refresh_device_settings(const DeviceSettings *previous) {
   if (!get_slint_window()) {
     return;

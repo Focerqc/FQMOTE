@@ -37,7 +37,7 @@ void reset_sleep_timer(void) {
   uint64_t duration_ms = get_auto_off_ms();
   deadline_us = 0;
   if (sleep_timer && esp_timer_is_active(sleep_timer)) {
-    // Expiry can race with stop; a queued callback is guarded by deadline_us.
+    // Stop can race expiry; deadline_us guards the queued callback.
     esp_err_t result = esp_timer_stop(sleep_timer);
     if (result != ESP_OK && result != ESP_ERR_INVALID_STATE) {
       ESP_ERROR_CHECK(result);

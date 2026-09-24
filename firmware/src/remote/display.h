@@ -25,7 +25,6 @@ extern "C"
 
   void apply_theme_settings();
 
-  // Schedule visual updates after console preferences are saved.
   void display_refresh_device_settings(const DeviceSettings *previous);
 
 #ifdef __cplusplus

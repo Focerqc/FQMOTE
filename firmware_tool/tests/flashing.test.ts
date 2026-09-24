@@ -67,7 +67,6 @@ function device() {
     hardware: 'test',
   });
   vi.spyOn(service, 'checkCoredump').mockResolvedValue(false);
-  // File reading is unrelated to bootloader lifecycle; retain the real flash flow.
   vi.spyOn(
     service as unknown as { readFileAsString(file: File): Promise<string> },
     'readFileAsString',

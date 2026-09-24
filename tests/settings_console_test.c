@@ -225,7 +225,6 @@ static int save(const char *json) {
 }
 
 static void test_input_record(void) {
-  // Persist a calibration on the original mapping, then simulate interrupted remaps.
   calibration_settings.x_center = 1900;
   calibration_settings.y_center = 2200;
   assert(settings_store_input_state(&input_pin_settings, &calibration_settings) == ESP_OK);
@@ -391,7 +390,6 @@ int main(int argc, char **argv) {
   int previous_writes = writes;
   assert(save("{\"wifi_ssid\":\"unchanged\",\"js_x_gpio\":-1}") != 0);
   assert(writes == previous_writes);
-  // Typed saves and JSON saves share the descriptor limits and NVS mapping.
   assert(settings_save_string("wifi_ssid", "typed save") == ESP_OK);
   assert(!strcmp(ssid, "typed save"));
   assert(settings_save_string("wifi_ssid", "123456789012345678901234567890123") != ESP_OK);

@@ -55,8 +55,7 @@ const getEspLogInfo = (
   data: string;
   type: LogEntry['type'];
 } => {
-  // JSON frames already escape control characters. Preserve their Unicode data
-  // rather than applying terminal text cleanup to credentials and labels.
+  // JSON frames are already escaped; skip terminal cleanup so Unicode survives.
   if (data.startsWith('{')) return { data: data.trimEnd(), type: 'info' };
   // Convert carriage returns to newlines for proper display
   const normalizedData = data.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -139,7 +138,6 @@ export class ESPService {
     this.terminal?.writeLine(message, type);
   };
 
-  // Observe transaction boundaries before routing lines to their listeners.
   private emitToListeners = (...args: Parameters<LogListener>) => {
     if (this.consoleFrame?.(args[0])) return;
     for (const listener of this.logListeners) {
@@ -166,8 +164,7 @@ export class ESPService {
       const logInfo = getEspLogInfo(line);
       if (logInfo.data) {
         this.emitToListeners(logInfo.data, logInfo.type);
-        // Settings values may contain words such as "rst:" or "Backtrace:";
-        // JSON payloads are data, not reboot/crash diagnostics.
+        // JSON values may contain "rst:" or "Backtrace:"; they aren't diagnostics.
         if (logInfo.data.startsWith('{')) continue;
 
         // Check for backtrace
@@ -386,8 +383,7 @@ export class ESPService {
       let hasCoredump: boolean = false;
 
       if (!hasFirmware) {
-        // Reuse this synchronized stub for the first flash. Resetting a blank
-        // ESP32-S3 can drop its native USB connection before it can reconnect.
+        // Reuse the synced stub: resetting a blank ESP32-S3 can drop its native USB.
         this.espLoader = loader;
         this.bootloaderReady = true;
         this.log(
@@ -488,9 +484,7 @@ export class ESPService {
     if (wasConnected) this.onDisconnect?.();
   }
 
-  // Own the console through its prompt, even if the caller cancels after sending.
-  // On timeout the console is resynchronised before the next command, rather
-  // than letting late output be interpreted as that command's response.
+  // Hold the console until its prompt returns, so late output never answers the next command.
   withConsoleTransaction<T>(
     operation: (transport: SettingsTransport) => Promise<T>,
     signal?: AbortSignal,
@@ -613,8 +607,7 @@ export class ESPService {
     });
   }
 
-  // A bare newline makes the console print a fresh prompt. Wait until prompts
-  // stop arriving: anything before the last one belongs to the timed-out command.
+  // A bare newline prints a fresh prompt; output before the last prompt is stale.
   private async resyncConsole(): Promise<void> {
     let seen = false;
     let quiet: ReturnType<typeof setTimeout> | undefined;
@@ -676,15 +669,14 @@ export class ESPService {
 
     const loader = this.espLoader;
     const generation = this.commandGeneration;
-    // Web Serial permits one writer at a time. Keep whole commands ordered,
-    // including requests from different tabs and repeated mount effects.
+    // Web Serial allows one writer at a time, so queue whole commands.
     const write = this.commandWrites.then(async () => {
       if (this.espLoader !== loader || generation !== this.commandGeneration) {
         throw new Error('Connection changed before the command could be sent');
       }
       await loader.transport.write(this.encodeCommand(command));
     });
-    // A failed write must reject its caller without blocking later commands.
+    // A failed write must not block later commands.
     this.commandWrites = write.catch(() => {});
     try {
       await write;

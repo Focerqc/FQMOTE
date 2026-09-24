@@ -1,1 +1,1 @@
-// Deliberately empty: the test supplies what it needs from this header.
+// Intentionally empty; see tests/CMakeLists.txt.

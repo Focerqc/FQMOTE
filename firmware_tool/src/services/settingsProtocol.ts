@@ -55,7 +55,6 @@ export const settingsResultSchema = z.object({
 export type SettingsMetadata = z.infer<typeof settingsMetadataSchema>;
 export type SettingsValues = Record<string, string | number>;
 
-// No field names or device-specific validation rules live in the tool.
 export function settingsValuesSchema(metadata: SettingsMetadata) {
   const shape: Record<string, z.ZodType<string | number>> = Object.create(null);
   for (const field of metadata.fields) {
@@ -103,7 +102,6 @@ export function settingsSaveCommand(patch: SettingsValues): string {
 }
 
 type LogListener = (line: string, type: 'info' | 'error' | 'success') => boolean;
-// Structural subset keeps the protocol independent of the serial implementation.
 export interface SettingsTransport {
   withConsoleTransaction?<T>(
     operation: (transport: SettingsTransport) => Promise<T>,
