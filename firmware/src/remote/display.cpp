@@ -22,6 +22,7 @@
 #include "remote/color_utils.h"
 #include "remote/i2c.h"
 #include "remote/imu.h"
+#include "remote/input_settings.h"
 #include "remote/led.h"
 #include "remoteinputs.h"
 #include "screens/about_screen.h"
@@ -498,6 +499,8 @@ static void slint_event_loop(void *pvParameters) {
   default:
     break;
   }
+  slint_window->global<UiState>().set_calibration_prompt(
+      settings_calibration_needed(&input_pin_settings, &calibration_settings));
   connect_callbacks();
   apply_theme_settings();
   MEM_MARK("post callbacks");

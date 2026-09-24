@@ -30,6 +30,15 @@ void settings_reset_calibration(CalibrationSettings *calibration, bool reset_x, 
   }
 }
 
+// An enabled axis still on the built-in range has never been calibrated.
+bool settings_calibration_needed(const InputPinSettings *pins, const CalibrationSettings *calibration) {
+  bool x_default = calibration->x_min == STICK_MIN_VAL && calibration->x_max == STICK_MAX_VAL &&
+                   calibration->x_center == STICK_MID_VAL;
+  bool y_default = calibration->y_min == STICK_MIN_VAL && calibration->y_max == STICK_MAX_VAL &&
+                   calibration->y_center == STICK_MID_VAL;
+  return (pins->js_x_gpio > INPUT_PIN_DISABLED && x_default) || (pins->js_y_gpio > INPUT_PIN_DISABLED && y_default);
+}
+
 int settings_store_input_state(const InputPinSettings *pins, const CalibrationSettings *calibration) {
   if (!pins || !calibration) {
     return ESP_ERR_INVALID_ARG;

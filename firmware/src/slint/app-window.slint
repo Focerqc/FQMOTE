@@ -176,6 +176,7 @@ export global UiState {
 
     // --- Boot notice (set by firmware when recovering from a crash) ---
     in-out property <string> boot-notice: "";
+    in-out property <bool> calibration-prompt: false;
 
     // --- Confirm Dialog ---
     in-out property <bool> show-confirm-dialog: false;
@@ -573,5 +574,18 @@ export component AppWindow inherits Window {
         confirm-text: "OK";
         show-cancel: false;
         confirmed => { UiState.boot-notice = ""; }
+    }
+
+    // Asked again on the next boot until the stick is calibrated
+    if UiState.calibration-prompt && UiState.boot-notice == "": ConfirmDialog {
+        title: "Calibrate joystick";
+        message: "Your joystick hasn't been calibrated yet.";
+        confirm-text: "Calibrate";
+        cancel-text: "Later";
+        confirmed => {
+            UiState.calibration-prompt = false;
+            UiState.screen = Screen.input-calibration;
+        }
+        cancelled => { UiState.calibration-prompt = false; }
     }
 }

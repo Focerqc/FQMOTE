@@ -254,6 +254,19 @@ static void test_input_record(void) {
   assert(settings_load_input_state(&loaded, &calibration) != ESP_OK && loaded.js_x_gpio == 42);
 }
 
+static void test_calibration_needed(void) {
+  InputPinSettings pins = {.js_x_gpio = 1, .js_y_gpio = 2, .btn1_gpio = 3};
+  CalibrationSettings calibration = {
+      .x_min = 10, .x_max = 4000, .x_center = 2000, .y_min = 20, .y_max = 3900, .y_center = 2100};
+  assert(!settings_calibration_needed(&pins, &calibration));
+  settings_reset_calibration(&calibration, false, true);
+  assert(settings_calibration_needed(&pins, &calibration));
+  pins.js_y_gpio = INPUT_PIN_DISABLED;
+  assert(!settings_calibration_needed(&pins, &calibration));
+  settings_reset_calibration(&calibration, true, false);
+  assert(settings_calibration_needed(&pins, &calibration));
+}
+
 static void test_device_preferences(void) {
   assert(settings_save_device_preferences() == ESP_OK);
   assert(device_writes == 13);
@@ -405,6 +418,7 @@ int main(int argc, char **argv) {
   assert(settings_save_input_pins(&input_pin_settings) != ESP_OK);
   blob_write_fails = false;
   test_input_record();
+  test_calibration_needed();
   test_device_preferences();
   test_allocation_failures();
   puts("settings console tests passed");
