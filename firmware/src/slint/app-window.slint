@@ -578,9 +578,9 @@ export component AppWindow inherits Window {
 
     // Asked again on the next boot until the stick is calibrated
     if UiState.calibration-prompt && UiState.boot-notice == "": ConfirmDialog {
-        title: "Calibrate joystick";
-        message: "Your joystick hasn't been calibrated yet.";
-        confirm-text: "Calibrate";
+        title: "Welcome to Pubmote";
+        message: "Set up your remote, starting with joystick calibration, then review your settings in the menu.";
+        confirm-text: "Get started";
         cancel-text: "Later";
         confirmed => {
             UiState.calibration-prompt = false;
