@@ -387,6 +387,7 @@ int main(int argc, char **argv) {
     assert(console_save_settings(3, bad_save) != 0 && !strcmp(ssid, "tagged"));
     assert(console_get_settings(2, bad_get) != 0);
   }
+  fail_write = true;
   assert(save("{\"wifi_ssid\":\"failure\"}") != 0);
   fail_write = false;
   fail_apply = true;
