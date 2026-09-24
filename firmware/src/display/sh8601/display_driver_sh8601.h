@@ -1,6 +1,4 @@
-
-#ifndef __DISPLAY_DRIVER_SH8601_H
-#define __DISPLAY_DRIVER_SH8601_H
+#pragma once
 
 #include <esp_err.h>
 #include <esp_lcd_sh8601.h>
@@ -140,6 +138,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

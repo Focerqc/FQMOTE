@@ -1,5 +1,4 @@
-#ifndef __STARTUP_H
-#define __STARTUP_H
+#pragma once
 #include "utilities/callback_registry.h"
 
 #ifdef __cplusplus
@@ -13,6 +12,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

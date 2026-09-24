@@ -1,5 +1,4 @@
-#ifndef __CONSOLE_H
-#define __CONSOLE_H
+#pragma once
 #include <stdint.h>
 #include <stdio.h>
 
@@ -14,6 +13,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

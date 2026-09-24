@@ -1,6 +1,4 @@
-
-#ifndef __STATS_H
-#define __STATS_H
+#pragma once
 #include "receiver.h"
 #include "utilities/callback_registry.h"
 #include <charge/charge_driver.h>
@@ -84,6 +82,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

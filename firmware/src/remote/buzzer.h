@@ -1,5 +1,4 @@
-#ifndef __BUZZER_H
-#define __BUZZER_H
+#pragma once
 
 #include "tones.h"
 #include <stdio.h>
@@ -23,6 +22,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

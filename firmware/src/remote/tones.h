@@ -1,5 +1,4 @@
-#ifndef __TONES_H
-#define __TONES_H
+#pragma once
 
 #ifdef __cplusplus
 extern "C"
@@ -24,6 +23,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

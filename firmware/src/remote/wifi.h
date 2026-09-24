@@ -1,5 +1,4 @@
-#ifndef __WIFI_H
-#define __WIFI_H
+#pragma once
 
 #include "esp_err.h"
 #include "esp_event.h"
@@ -166,5 +165,3 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-
-#endif // __WIFI_H

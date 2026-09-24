@@ -1,5 +1,4 @@
-#ifndef __CHARGE_DRIVER_ADC_H
-#define __CHARGE_DRIVER_ADC_H
+#pragma once
 #include <charge/charge_driver.h>
 #include <esp_err.h>
 
@@ -20,6 +19,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

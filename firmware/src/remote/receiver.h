@@ -1,5 +1,4 @@
-#ifndef __RECEIVER_H
-#define __RECEIVER_H
+#pragma once
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -42,6 +41,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

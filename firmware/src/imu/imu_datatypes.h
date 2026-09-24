@@ -1,5 +1,4 @@
-#ifndef __IMU_DATA_H
-#define __IMU_DATA_H
+#pragma once
 
 typedef enum {
   IMU_EVENT_NONE,
@@ -19,5 +18,3 @@ typedef struct {
   float gyro_z;
   imu_event_t event;
 } imu_data_t;
-
-#endif

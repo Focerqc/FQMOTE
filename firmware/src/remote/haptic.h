@@ -1,5 +1,4 @@
-#ifndef __HAPTIC_H
-#define __HAPTIC_H
+#pragma once
 #include "haptic/haptic_driver.h"
 
 #ifdef __cplusplus
@@ -14,6 +13,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

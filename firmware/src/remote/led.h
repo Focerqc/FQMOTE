@@ -1,5 +1,4 @@
-#ifndef __LED_H
-#define __LED_H
+#pragma once
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -60,6 +59,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

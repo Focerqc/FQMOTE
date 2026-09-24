@@ -1,5 +1,4 @@
-#ifndef __VESC_UTILS_H
-#define __VESC_UTILS_H
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -39,6 +38,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

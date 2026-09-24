@@ -1,5 +1,4 @@
-#ifndef __TIME_H
-#define __TIME_H
+#pragma once
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -11,6 +10,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

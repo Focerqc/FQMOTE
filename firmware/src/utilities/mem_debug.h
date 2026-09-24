@@ -1,5 +1,4 @@
-#ifndef __MEM_DEBUG_H
-#define __MEM_DEBUG_H
+#pragma once
 
 #include "config.h"
 #include "esp_heap_caps.h"
@@ -23,7 +22,5 @@ void mem_debug_report(void);
 
   #define MEM_MARK(label) ((void)0)
   #define mem_debug_report() ((void)0)
-
-#endif
 
 #endif

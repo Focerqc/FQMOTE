@@ -1,5 +1,4 @@
-#ifndef __RELEASE_CLIENT_H
-#define __RELEASE_CLIENT_H
+#pragma once
 #include <esp_err.h>
 #include <stdbool.h>
 
@@ -35,6 +34,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

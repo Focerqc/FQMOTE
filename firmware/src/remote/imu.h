@@ -1,5 +1,4 @@
-#ifndef __IMU_H
-#define __IMU_H
+#pragma once
 #include "esp_err.h"
 #include "imu/imu_driver.h"
 
@@ -24,6 +23,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

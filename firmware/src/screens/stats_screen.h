@@ -1,5 +1,4 @@
-#ifndef __STATS_SCREEN_H
-#define __STATS_SCREEN_H
+#pragma once
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -13,6 +12,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

@@ -1,5 +1,4 @@
-#ifndef __VEHICLE_STATE_H
-#define __VEHICLE_STATE_H
+#pragma once
 #include "colors.h"
 #include <stdint.h>
 
@@ -35,6 +34,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

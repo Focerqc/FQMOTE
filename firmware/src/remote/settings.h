@@ -1,3 +1,4 @@
+// Host tests pre-define this guard to skip the header, so it can't be #pragma once.
 #ifndef __SETTINGS_H
 #define __SETTINGS_H
 #include "display.h"

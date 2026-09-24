@@ -1,5 +1,4 @@
-#ifndef __CHARGE_DRIVER_H
-#define __CHARGE_DRIVER_H
+#pragma once
 #include <esp_err.h>
 #include <esp_lcd_types.h>
 
@@ -40,6 +39,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

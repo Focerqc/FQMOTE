@@ -1,5 +1,4 @@
-#ifndef __CONNECTION_H
-#define __CONNECTION_H
+#pragma once
 #include "comms.h"
 #include <esp_timer.h>
 #include <stdbool.h>
@@ -45,6 +44,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

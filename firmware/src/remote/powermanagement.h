@@ -1,5 +1,4 @@
-#ifndef __POWERMANAGEMENT_H
-#define __POWERMANAGEMENT_H
+#pragma once
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -23,6 +22,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

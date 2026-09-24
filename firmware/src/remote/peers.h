@@ -1,5 +1,4 @@
-#ifndef __PEERS_H
-#define __PEERS_H
+#pragma once
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -20,6 +19,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

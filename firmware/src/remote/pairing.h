@@ -1,5 +1,4 @@
-#ifndef __PAIRING_H
-#define __PAIRING_H
+#pragma once
 
 #include "comms.h"
 #include <stdbool.h>
@@ -17,6 +16,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

@@ -1,5 +1,4 @@
-#ifndef __GPIO_DETECTION_H
-#define __GPIO_DETECTION_H
+#pragma once
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -14,6 +13,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

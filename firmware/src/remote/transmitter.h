@@ -1,5 +1,4 @@
-#ifndef __TRANSMITTER_H
-#define __TRANSMITTER_H
+#pragma once
 #include <stdint.h>
 #include <stdio.h>
 
@@ -26,6 +25,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

@@ -1,5 +1,4 @@
-#ifndef __PSRAM_TASK_H
-#define __PSRAM_TASK_H
+#pragma once
 
 #include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
@@ -29,5 +28,3 @@ static inline TaskHandle_t create_psram_task(TaskFunction_t fn, const char *name
   }
   return xTaskCreateStatic(fn, name, stack_bytes, arg, prio, *stack, tcb);
 }
-
-#endif

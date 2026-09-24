@@ -1,5 +1,4 @@
-#ifndef __CHARGE_DRIVER_SY6970_HPP
-#define __CHARGE_DRIVER_SY6970_HPP
+#pragma once
 
 #include <charge/charge_driver.h>
 #include <esp_err.h>
@@ -18,6 +17,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

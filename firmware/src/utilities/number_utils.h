@@ -1,5 +1,4 @@
-#ifndef __NUMBER_UTILS_H
-#define __NUMBER_UTILS_H
+#pragma once
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -12,6 +11,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

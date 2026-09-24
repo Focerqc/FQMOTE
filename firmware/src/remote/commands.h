@@ -1,5 +1,4 @@
-#ifndef __COMMANDS_H
-#define __COMMANDS_H
+#pragma once
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -28,6 +27,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

@@ -1,3 +1,4 @@
+// Host tests pre-define this guard to skip the header, so it can't be #pragma once.
 #ifndef __CONFIG_H
 #define __CONFIG_H
 

@@ -1,5 +1,4 @@
-#ifndef __DISPLAY_H
-#define __DISPLAY_H
+#pragma once
 
 #include "esp_err.h"
 #include <stdbool.h>
@@ -85,6 +84,4 @@ public:
 };
 
 AppWindow *get_slint_window();
-#endif
-
 #endif

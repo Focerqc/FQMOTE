@@ -1,5 +1,4 @@
-#ifndef __ESPNOW_H
-#define __ESPNOW_H
+#pragma once
 
 #include "comms.h"
 
@@ -18,6 +17,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

@@ -1,5 +1,4 @@
-#ifndef __CALLBACK_REGISTRY_H
-#define __CALLBACK_REGISTRY_H
+#pragma once
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +22,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

@@ -1,6 +1,4 @@
-
-#ifndef __STRING_UTILS_H
-#define __STRING_UTILS_H
+#pragma once
 
 #ifdef __cplusplus
 extern "C"
@@ -11,6 +9,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

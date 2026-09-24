@@ -1,5 +1,4 @@
-#ifndef __ORCHESTRATOR_H
-#define __ORCHESTRATOR_H
+#pragma once
 
 #ifdef __cplusplus
 extern "C"
@@ -10,6 +9,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif
