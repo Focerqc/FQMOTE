@@ -48,6 +48,12 @@ jobs:
       - name: Type check
         run: pnpm firmware-tool:typecheck
 
+      - name: Type-check tests
+        run: pnpm --filter @pubmote/firmware-tool test:typecheck
+
+      - name: Test
+        run: pnpm --filter @pubmote/firmware-tool test
+
       - name: Build
         working-directory: ./firmware_tool
         run: pnpm build

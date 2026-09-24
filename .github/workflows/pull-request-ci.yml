@@ -6,6 +6,9 @@ on:
     paths:
       - 'firmware/**'
       - 'platformio.ini'
+      - 'tests/**'
+      - 'firmware_tool/src/services/settingsProtocol.ts'
+      - 'firmware_tool/tests/settingsProtocol.test.ts'
       - '.github/workflows/pull-request-ci.yml'
     types: 
       - opened
@@ -48,3 +51,45 @@ jobs:
           PLATFORMIO_BUILD_FLAGS: |
             -D RELEASE_VARIANT=\"release\"
             -D RELEASES_AUTH_TOKEN=\"${{ secrets.RELEASES_AUTH_TOKEN }}\"
+
+  host-tests:
+    if: github.event.pull_request.draft == false
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Check out ESP-IDF test dependencies
+        uses: actions/checkout@v4
+        with:
+          repository: espressif/esp-idf
+          ref: v5.5
+          path: .pio/test-idf
+          persist-credentials: false
+          sparse-checkout: |
+            components/console
+            components/json
+
+      - name: Build and run C tests
+        run: |
+          git -C .pio/test-idf submodule update --init components/json/cJSON
+          cmake -S tests -B .pio/host-tests -DIDF_PATH="$GITHUB_WORKSPACE/.pio/test-idf"
+          cmake --build .pio/host-tests
+          ctest --test-dir .pio/host-tests --output-on-failure
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: corepack enable && pnpm i --frozen-lockfile
+
+      # Checks the tool's settings protocol against the real firmware handler
+      - name: Run cross-language settings test
+        env:
+          SETTINGS_CONSOLE_TEST_BIN: ${{ github.workspace }}/.pio/host-tests/settings_console_test
+        run: pnpm --filter @pubmote/firmware-tool exec vitest run tests/settingsProtocol.test.ts
