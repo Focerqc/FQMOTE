@@ -245,7 +245,7 @@ static void test_input_record(void) {
   assert(settings_load_input_state(&loaded, &calibration) == ESP_OK);
   assert(loaded.js_x_gpio == -1 && calibration.x_center == STICK_MID_VAL);
   assert(calibration.y_center == 2200 && calibration.deadband == STICK_DEADBAND);
-  // Truncated or future records must not overwrite the caller's legacy defaults.
+  // Truncated or future records must not overwrite the caller's defaults.
   input_blob_size = 4;
   loaded.js_x_gpio = 42;
   assert(settings_load_input_state(&loaded, &calibration) != ESP_OK && loaded.js_x_gpio == 42);

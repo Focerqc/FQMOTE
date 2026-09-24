@@ -91,7 +91,7 @@ typedef struct {
   size_t max_bytes; // nonzero for strings
   bool secret;
   char *(*read_string)(void);
-  const char *length_key; // legacy NVS length key for strings
+  const char *length_key; // NVS key holding a string's byte length
   uint32_t (*read_number)(void);
   void (*apply_number)(uint32_t value);
   SettingOptions (*options)(void);

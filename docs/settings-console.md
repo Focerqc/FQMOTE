@@ -16,12 +16,12 @@ setting keys or board pin tables.
 API. The console adapter only handles command arguments and response printing.
 The API owns string validation and persistence; both JSON saves and the typed
 Wi-Fi setters call `settings_save_string()`. Descriptors carry the NVS key and
-legacy length key, so another string setting needs no new save branch. The API
+length key, so another string setting needs no new save branch. The API
 uses the NVS primitives in `settings.c` and the existing live input application
 function. Pin persistence stores the complete mapping and calibration in one versioned
-NVS blob and propagates storage errors to the caller. Existing per-key settings
-are read until the first successful pin or calibration save; subsequent boots
-prefer the new record. Downgrading to old firmware uses the last legacy values. Wi-Fi byte limits are
+NVS blob and propagates storage errors to the caller. It is the only source of
+input settings: without a valid record, pins and calibration start from the
+board defaults and the remote asks to be calibrated at boot. Wi-Fi byte limits are
 shared constants in `settings_types.h`, used by storage and metadata alike.
 
 Device preferences include brightness (10?255), rotation, theme colour, battery

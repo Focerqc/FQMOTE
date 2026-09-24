@@ -24,7 +24,6 @@ static const char *TAG = "PUBREMOTE-SETTINGS";
 #define BL_LEVEL_DEFAULT 200
 #define SCREEN_ROTATION_KEY "screen_rotation"
 #define AUTO_OFF_TIME_KEY "auto_off_time"
-#define EXPO_ADJUST_FACTOR 100 // Stored as 2dp int
 
 static const AutoOffOptions DEFAULT_AUTO_OFF_TIME = AUTO_OFF_5_MINUTES;
 static const uint8_t DEFAULT_PEER_ADDR[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
@@ -407,20 +406,6 @@ esp_err_t reset_all_settings() {
   return nvs_flash_erase();
 }
 
-// Falls back when the key is missing or the value can't be a GPIO at all
-static int8_t read_pin_setting(const char *key, int8_t fallback) {
-  uint32_t raw = 0;
-  if (nvs_read_int(key, &raw) != ESP_OK) {
-    return fallback;
-  }
-  int32_t value = (int32_t)raw;
-  if (value < INPUT_PIN_DISABLED || value >= GPIO_NUM_MAX) {
-    ESP_LOGE(TAG, "Stored pin '%s' out of range (%ld)", key, (long)value);
-    return fallback;
-  }
-  return (int8_t)value;
-}
-
 static uint8_t get_auto_off_time_minutes() {
   switch (device_settings.auto_off_time) {
   case AUTO_OFF_DISABLED:
@@ -692,48 +677,16 @@ esp_err_t settings_init() {
     device_settings.led_mode = DEFAULT_LED_MODE;
   }
 
-  // Reading calibration settings
-  calibration_settings.x_min =
-      nvs_read_int("x_min", &temp_setting_value) == ESP_OK ? (uint16_t)temp_setting_value : STICK_MIN_VAL;
-  calibration_settings.x_max =
-      nvs_read_int("x_max", &temp_setting_value) == ESP_OK ? (uint16_t)temp_setting_value : STICK_MAX_VAL;
-
-  calibration_settings.y_min =
-      nvs_read_int("y_min", &temp_setting_value) == ESP_OK ? (uint16_t)temp_setting_value : STICK_MIN_VAL;
-
-  calibration_settings.y_max =
-      nvs_read_int("y_max", &temp_setting_value) == ESP_OK ? (uint16_t)temp_setting_value : STICK_MAX_VAL;
-
-  calibration_settings.x_center =
-      nvs_read_int("x_center", &temp_setting_value) == ESP_OK ? (uint16_t)temp_setting_value : STICK_MID_VAL;
-
-  calibration_settings.y_center =
-      nvs_read_int("y_center", &temp_setting_value) == ESP_OK ? (uint16_t)temp_setting_value : STICK_MID_VAL;
-
-  calibration_settings.deadband =
-      nvs_read_int("deadband", &temp_setting_value) == ESP_OK ? (uint16_t)temp_setting_value : STICK_DEADBAND;
-
-  calibration_settings.expo =
-      nvs_read_int("expo", &temp_setting_value) == ESP_OK ? (float)temp_setting_value / EXPO_ADJUST_FACTOR : STICK_EXPO;
-
-  calibration_settings.invert_x =
-      nvs_read_int("invert_x", &temp_setting_value) == ESP_OK ? (bool)temp_setting_value : INVERT_X_AXIS;
-
-  calibration_settings.invert_y =
-      nvs_read_int("invert_y", &temp_setting_value) == ESP_OK ? (bool)temp_setting_value : INVERT_Y_AXIS;
+  calibration_settings.expo = STICK_EXPO;
+  calibration_settings.invert_x = INVERT_X_AXIS;
+  calibration_settings.invert_y = INVERT_Y_AXIS;
+  settings_reset_calibration(&calibration_settings, true, true);
 
   // Adopt a stored assignment only if it still validates, so a stale mapping
   // can't leave the remote without inputs
   InputPinSettings stored_pins;
   input_pins_load_defaults(&stored_pins);
   input_pin_settings = stored_pins;
-
-  stored_pins.js_x_gpio = read_pin_setting("js_x_gpio", stored_pins.js_x_gpio);
-  stored_pins.js_y_gpio = read_pin_setting("js_y_gpio", stored_pins.js_y_gpio);
-  stored_pins.btn1_gpio = read_pin_setting("btn1_gpio", stored_pins.btn1_gpio);
-  stored_pins.btn1_active_level = nvs_read_int("btn1_level", &temp_setting_value) == ESP_OK
-                                      ? (temp_setting_value ? 1 : 0)
-                                      : stored_pins.btn1_active_level;
 
   CalibrationSettings stored_calibration;
   if (settings_load_input_state(&stored_pins, &stored_calibration) == ESP_OK) {
