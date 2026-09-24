@@ -9,7 +9,13 @@ interface Props {
   hasFirmwareFiles?: boolean;
 }
 
-export function FlashProgress({ progress, isDeviceConnected = false, eraseFlash, onEraseFlashChange, hasFirmwareFiles = false }: Props) {
+export function FlashProgress({
+  progress,
+  isDeviceConnected = false,
+  eraseFlash,
+  onEraseFlashChange,
+  hasFirmwareFiles = false,
+}: Props) {
   const getStatusIcon = () => {
     switch (progress.status) {
       case 'idle':
@@ -30,7 +36,9 @@ export function FlashProgress({ progress, isDeviceConnected = false, eraseFlash,
 
     switch (progress.status) {
       case 'idle':
-        return hasFirmwareFiles ? 'Device connected - Ready to flash' : 'Device connected - No files selected';
+        return hasFirmwareFiles
+          ? 'Device connected - Ready to flash'
+          : 'Device connected - No files selected';
       case 'connecting':
         return 'Connecting to device...';
       case 'erasing':
@@ -79,9 +87,7 @@ export function FlashProgress({ progress, isDeviceConnected = false, eraseFlash,
                 style={{ width: `${progress.progress}%` }}
               />
             </div>
-            <div className="text-right text-sm text-gray-500">
-              {Math.round(progress.progress)}%
-            </div>
+            <div className="text-right text-sm text-gray-500">{Math.round(progress.progress)}%</div>
           </div>
         )}
     </div>

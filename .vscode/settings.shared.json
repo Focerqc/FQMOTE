@@ -26,7 +26,11 @@
       "editor.wrappingStrategy": "advanced",
       "editor.formatOnPaste": false
     },
-    "C_Cpp.clang_format_style": "{ BasedOnStyle: Microsoft, IndentWidth: 2, ColumnLimit: 120, IndentPPDirectives: BeforeHash, BraceWrapping: { AfterControlStatement: false, AfterFunction: false, AfterClass: false, AfterStruct: false, AfterEnum: false } }",
+    "[javascript][javascriptreact][typescript][typescriptreact][css][html]": {
+      "editor.defaultFormatter": "oxc.oxc-vscode",
+      "editor.formatOnSave": true
+    },
+    "C_Cpp.clang_format_style": "file",
     "cmake.configureOnOpen": false,
     "files.exclude": {
       "*.dev.zip": true,

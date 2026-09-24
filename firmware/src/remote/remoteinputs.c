@@ -600,7 +600,7 @@ esp_err_t input_pins_validate(const struct InputPinSettings *cfg, char *err, siz
 
 #define PIN_FAIL(...)                                                                                                  \
   do {                                                                                                                 \
-    if (err != NULL && err_len > 0) {                                                                                   \
+    if (err != NULL && err_len > 0) {                                                                                  \
       snprintf(err, err_len, __VA_ARGS__);                                                                             \
     }                                                                                                                  \
     return ESP_ERR_INVALID_ARG;                                                                                        \
@@ -743,12 +743,13 @@ esp_err_t input_pins_apply(const struct InputPinSettings *cfg, char *err, size_t
   // Persist before replacing the live inputs so a failed write can be retried.
   res = settings_save_input_pins(cfg);
   if (res != ESP_OK) {
-    if (err && err_len) snprintf(err, err_len, "Could not save input pins: %s", esp_err_to_name(res));
+    if (err && err_len)
+      snprintf(err, err_len, "Could not save input pins: %s", esp_err_to_name(res));
     return res;
   }
 
-  ESP_LOGI(TAG, "Applying input pins: js_x=%d js_y=%d btn=%d (level %u)", cfg->js_x_gpio, cfg->js_y_gpio, cfg->btn1_gpio,
-           cfg->btn1_active_level);
+  ESP_LOGI(TAG, "Applying input pins: js_x=%d js_y=%d btn=%d (level %u)", cfg->js_x_gpio, cfg->js_y_gpio,
+           cfg->btn1_gpio, cfg->btn1_active_level);
 
   thumbstick_stop();
   buttons_deinit();

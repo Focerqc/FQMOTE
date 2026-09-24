@@ -1,9 +1,9 @@
 #include "settings_api.h"
 #include "../config.h"
 #include "cJSON.h"
+#include "powermanagement.h"
 #include "remoteinputs.h"
 #include "settings.h"
-#include "powermanagement.h"
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -64,8 +64,12 @@ DEFINE_SETTING_OPTIONS(pocket_options, POCKET_LABELS, POCKET_MODE_ENABLED + 1)
 
 // Typed accessors avoid aliasing enum and byte-sized members through integers.
 #define DEFINE_DEVICE_ACCESSORS(key, member, type)                                                                     \
-  static uint32_t read_##key(void) { return device_settings.member; }                                                  \
-  static void apply_##key(uint32_t value) { device_settings.member = (type)value; }
+  static uint32_t read_##key(void) {                                                                                   \
+    return device_settings.member;                                                                                     \
+  }                                                                                                                    \
+  static void apply_##key(uint32_t value) {                                                                            \
+    device_settings.member = (type)value;                                                                              \
+  }
 DEFINE_DEVICE_ACCESSORS(bl_level, bl_level, uint8_t)
 DEFINE_DEVICE_ACCESSORS(screen_rotation, screen_rotation, ScreenRotation)
 DEFINE_DEVICE_ACCESSORS(theme_color, theme_color, uint32_t)
@@ -101,7 +105,9 @@ typedef struct {
   uint64_t (*choices)(void);
 } SettingDescriptor;
 
-static uint64_t axis_choices(void) { return input_pins_adc_capable_mask() & input_pins_assignable_mask(); }
+static uint64_t axis_choices(void) {
+  return input_pins_adc_capable_mask() & input_pins_assignable_mask();
+}
 
 static const SettingDescriptor fields[] = {
     {.key = "wifi_ssid",

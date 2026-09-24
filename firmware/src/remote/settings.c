@@ -1,16 +1,16 @@
 #include "settings.h"
-#include "settings_api.h"
-#include "input_settings.h"
-#include "powermanagement.h"
 #include "config.h"
 #include "connection.h"
 #include "display.h"
 #include "esp_log.h"
 #include "esp_system.h"
 #include "espnow.h"
+#include "input_settings.h"
 #include "nvs_flash.h"
+#include "powermanagement.h"
 #include "remote/adc.h"
 #include "remote/remoteinputs.h"
+#include "settings_api.h"
 #include "stats.h"
 #include "string.h"
 #include <colors.h>
@@ -713,9 +713,8 @@ esp_err_t settings_init() {
   calibration_settings.deadband =
       nvs_read_int("deadband", &temp_setting_value) == ESP_OK ? (uint16_t)temp_setting_value : STICK_DEADBAND;
 
-  calibration_settings.expo = nvs_read_int("expo", &temp_setting_value) == ESP_OK
-                                  ? (float)temp_setting_value / EXPO_ADJUST_FACTOR
-                                  : STICK_EXPO;
+  calibration_settings.expo =
+      nvs_read_int("expo", &temp_setting_value) == ESP_OK ? (float)temp_setting_value / EXPO_ADJUST_FACTOR : STICK_EXPO;
 
   calibration_settings.invert_x =
       nvs_read_int("invert_x", &temp_setting_value) == ESP_OK ? (bool)temp_setting_value : INVERT_X_AXIS;
@@ -732,8 +731,9 @@ esp_err_t settings_init() {
   stored_pins.js_x_gpio = read_pin_setting("js_x_gpio", stored_pins.js_x_gpio);
   stored_pins.js_y_gpio = read_pin_setting("js_y_gpio", stored_pins.js_y_gpio);
   stored_pins.btn1_gpio = read_pin_setting("btn1_gpio", stored_pins.btn1_gpio);
-  stored_pins.btn1_active_level =
-      nvs_read_int("btn1_level", &temp_setting_value) == ESP_OK ? (temp_setting_value ? 1 : 0) : stored_pins.btn1_active_level;
+  stored_pins.btn1_active_level = nvs_read_int("btn1_level", &temp_setting_value) == ESP_OK
+                                      ? (temp_setting_value ? 1 : 0)
+                                      : stored_pins.btn1_active_level;
 
   CalibrationSettings stored_calibration;
   if (settings_load_input_state(&stored_pins, &stored_calibration) == ESP_OK) {

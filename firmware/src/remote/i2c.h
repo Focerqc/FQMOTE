@@ -1,5 +1,4 @@
-#ifndef __I2C_H
-#define __I2C_H
+#pragma once
 
 #include "driver/i2c_master.h"
 #include "esp_err.h"
@@ -19,6 +18,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

@@ -34,8 +34,8 @@
 #include "screens/stats_screen.h"
 #include "screens/update_screen.h"
 #include "settings.h"
-#include "stats.h"
 #include "slint-esp.h"
+#include "stats.h"
 #include "utilities/mem_debug.h"
 
 #if TP_CST816S

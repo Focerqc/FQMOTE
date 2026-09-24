@@ -1,5 +1,4 @@
-#ifndef __ADC_H
-#define __ADC_H
+#pragma once
 #include <esp_adc/adc_cali.h>
 #include <esp_adc/adc_oneshot.h>
 #include <math.h>
@@ -37,6 +36,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

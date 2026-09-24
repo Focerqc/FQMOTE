@@ -1,30 +1,30 @@
-import React, { useRef, useState } from "react";
-import Header from "./components/Header";
-import { ESPService } from "./services/espService";
-import { TerminalService } from "./services/terminal";
-import { DeviceInfoData, FlashProgress as FlashProgressType, GitHubRelease } from "./types";
-import SettingsPage from "./components/SettingsPage";
-import FirmwarePage from "./components/FirmwarePage";
-import DeviceInfoPage from "./components/DeviceInfoPage";
-import { DeviceToolsProvider } from "./context/DeviceToolsContext";
-import { DeviceInfo } from "./components/DeviceInfo";
-import { ToastProvider, useToast } from "./context/ToastContext";
-import { Dialog } from "./components/ui/Dialog";
-import { fetchWithCorsProxy } from "./utils/corsProxy";
+import React, { useRef, useState } from 'react';
+import Header from './components/Header';
+import { ESPService } from './services/espService';
+import { TerminalService } from './services/terminal';
+import { DeviceInfoData, FlashProgress as FlashProgressType, GitHubRelease } from './types';
+import SettingsPage from './components/SettingsPage';
+import FirmwarePage from './components/FirmwarePage';
+import DeviceInfoPage from './components/DeviceInfoPage';
+import { DeviceToolsProvider } from './context/DeviceToolsContext';
+import { DeviceInfo } from './components/DeviceInfo';
+import { ToastProvider, useToast } from './context/ToastContext';
+import { Dialog } from './components/ui/Dialog';
+import { fetchWithCorsProxy } from './utils/corsProxy';
 
 // Helper function to compare semantic versions
 const compareVersions = (v1: string, v2: string): number => {
   const parts1 = v1.replace(/^v/, '').split('.').map(Number);
   const parts2 = v2.replace(/^v/, '').split('.').map(Number);
-  
+
   for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
     const part1 = parts1[i] || 0;
     const part2 = parts2[i] || 0;
-    
+
     if (part1 > part2) return 1;
     if (part1 < part2) return -1;
   }
-  
+
   return 0;
 };
 
@@ -35,55 +35,59 @@ const AppContent = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [flashProgress, setFlashProgress] = useState<FlashProgressType>({
-    status: "idle",
+    status: 'idle',
     progress: 0,
   });
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfoData>({
     connected: false,
   });
   const [isElfLoaded, setIsElfLoaded] = useState(false);
-  const [errorDialog, setErrorDialog] = useState<{isOpen: boolean, title: string, message: string} | null>(null);
+  const [errorDialog, setErrorDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  } | null>(null);
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
 
   // Handle device reboot
   React.useEffect(() => {
-    console.log("[App] Registering onReboot handler to espService");
+    console.log('[App] Registering onReboot handler to espService');
     espService.onReboot = async () => {
-      console.log("Device reboot detected, refreshing info...");
-      toast.info("Device reboot detected, refreshing info...");
-      
+      console.log('Device reboot detected, refreshing info...');
+      toast.info('Device reboot detected, refreshing info...');
+
       // Wait for boot - increased to 3.5s to ensure device is ready
-      await new Promise(r => setTimeout(r, 3500));
-      
+      await new Promise((r) => setTimeout(r, 3500));
+
       if (espService.isConnected()) {
         try {
-          console.log("[onReboot] Fetching version info...");
+          console.log('[onReboot] Fetching version info...');
           let verInfo = {};
           try {
-             verInfo = await espService.getVersionInfo();
-             console.log("[onReboot] Version info fetched:", verInfo);
-          } catch(err) {
-             console.warn("[onReboot] Failed to fetch version info:", err);
+            verInfo = await espService.getVersionInfo();
+            console.log('[onReboot] Version info fetched:', verInfo);
+          } catch (err) {
+            console.warn('[onReboot] Failed to fetch version info:', err);
           }
-          
-          console.log("[onReboot] Checking for coredump...");
+
+          console.log('[onReboot] Checking for coredump...');
           const hasCoredump = await espService.checkCoredump();
-          console.log("[onReboot] Coredump check result:", hasCoredump);
-          
-          setDeviceInfo(prev => ({
+          console.log('[onReboot] Coredump check result:', hasCoredump);
+
+          setDeviceInfo((prev) => ({
             ...prev,
             ...verInfo,
-            hasCoredump
+            hasCoredump,
           }));
-          
+
           if (hasCoredump) {
-            toast.error("Crash detected (core dump found)");
+            toast.error('Crash detected (core dump found)');
           }
         } catch (e) {
-            console.error("Failed to refresh info after reboot", e);
+          console.error('Failed to refresh info after reboot', e);
         }
       } else {
-          console.warn("[onReboot] Service not connected");
+        console.warn('[onReboot] Service not connected');
       }
     };
   }, [espService, toast]);
@@ -93,43 +97,45 @@ const AppContent = () => {
       try {
         await espService.sendCommand(command);
       } catch (error) {
-        console.error("Command error:", error);
+        console.error('Command error:', error);
       }
     },
-    [espService]
+    [espService],
   );
 
   const checkForUpdates = async () => {
     try {
-      const response = await fetchWithCorsProxy('https://api.github.com/repos/techfoundrynz/pubmote/releases');
+      const response = await fetchWithCorsProxy(
+        'https://api.github.com/repos/techfoundrynz/pubmote/releases',
+      );
       if (!response.ok) return;
-      
+
       const releases: GitHubRelease[] = await response.json();
       if (releases && releases.length > 0) {
         // Filter out nightly builds (releases with "nightly" in tag_name)
-        const nonNightlyReleases = releases.filter((release) =>
-          !release.tag_name.toLowerCase().includes('nightly')
+        const nonNightlyReleases = releases.filter(
+          (release) => !release.tag_name.toLowerCase().includes('nightly'),
         );
-        
+
         if (nonNightlyReleases.length === 0) return;
-        
+
         // Find the latest version by comparing all non-nightly releases
         let latestRelease = nonNightlyReleases[0];
         for (const release of nonNightlyReleases) {
           const currentVersion = release.tag_name.replace(/^v/, '');
           const latestVersionStr = latestRelease.tag_name.replace(/^v/, '');
-          
+
           if (compareVersions(currentVersion, latestVersionStr) > 0) {
             latestRelease = release;
           }
         }
-        
+
         // Extract version from tag_name (e.g., "v1.2.3" -> "1.2.3")
         const version = latestRelease.tag_name.replace(/^v/, '');
         setLatestVersion(version);
       }
     } catch (error) {
-      console.error("Failed to check for updates:", error);
+      console.error('Failed to check for updates:', error);
     }
   };
 
@@ -142,10 +148,10 @@ const AppContent = () => {
         ...info,
         connected: true,
       });
-      toast.success("Device connected");
+      toast.success('Device connected');
       // Check for updates after successful connection
       checkForUpdates();
-      
+
       // Automatically download ELF if version and hardware are available
       // Only auto-download for release builds (variant === 'release')
       if (info.version && info.hardware && info.variant === 'release') {
@@ -153,13 +159,13 @@ const AppContent = () => {
           await handleDownloadElf(info.version, info.hardware);
         } catch (error) {
           // Silently fail - user can manually download if needed
-          console.warn("Auto-download ELF failed:", error);
+          console.warn('Auto-download ELF failed:', error);
         }
       }
     } catch (error) {
-      console.error("Connection error:", error);
+      console.error('Connection error:', error);
       setDeviceInfo({ connected: false });
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast.error(`Connection failed: ${errorMessage}`);
     } finally {
       setIsConnecting(false);
@@ -169,12 +175,12 @@ const AppContent = () => {
   const handleDisconnect = () => {
     espService.disconnect();
     setDeviceInfo({ connected: false });
-    toast.info("Device disconnected");
+    toast.info('Device disconnected');
   };
 
   const handleViewCoredump = async () => {
     try {
-      await espService.sendCommand("coredump_print");
+      await espService.sendCommand('coredump_print');
     } catch (e) {
       console.error(e);
     }
@@ -182,61 +188,74 @@ const AppContent = () => {
 
   const handleClearCoredump = async () => {
     try {
-      await espService.sendCommand("coredump_erase");
+      await espService.sendCommand('coredump_erase');
       setDeviceInfo((prev) => ({ ...prev, hasCoredump: false }));
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleLoadElf = React.useCallback(async (file: File) => {
-    try {
-      await espService.setElf(file);
-      setIsElfLoaded(true);
-      terminal.log(`Loaded debug symbols from ${file.name}`, "success");
-    } catch (error) {
-      console.error("Failed to load ELF:", error);
-      terminal.log("Failed to load debug symbols", "error");
-      setIsElfLoaded(false);
-    }
-  }, [espService, terminal]);
+  const handleLoadElf = React.useCallback(
+    async (file: File) => {
+      try {
+        await espService.setElf(file);
+        setIsElfLoaded(true);
+        terminal.log(`Loaded debug symbols from ${file.name}`, 'success');
+      } catch (error) {
+        console.error('Failed to load ELF:', error);
+        terminal.log('Failed to load debug symbols', 'error');
+        setIsElfLoaded(false);
+      }
+    },
+    [espService, terminal],
+  );
 
-  const handleDownloadElf = async (versionOverride?: string, hardwareOverride?: string, isManual: boolean = false) => {
+  const handleDownloadElf = async (
+    versionOverride?: string,
+    hardwareOverride?: string,
+    isManual: boolean = false,
+  ) => {
     const version = versionOverride || deviceInfo.version;
     const hardware = hardwareOverride || deviceInfo.hardware;
-    
+
     if (!version || !hardware) {
       if (isManual) {
-        toast.error("Cannot download symbols: missing firmware version/hardware info");
+        toast.error('Cannot download symbols: missing firmware version/hardware info');
       }
       return;
     }
 
     try {
-      const response = await fetchWithCorsProxy('https://api.github.com/repos/techfoundrynz/pubmote/releases');
+      const response = await fetchWithCorsProxy(
+        'https://api.github.com/repos/techfoundrynz/pubmote/releases',
+      );
       if (!response.ok) throw new Error(`GitHub API Error: ${response.statusText}`);
-      
+
       const releases: GitHubRelease[] = await response.json();
 
       // 1. Try to find precise tag match
       let release = releases.find((r) => r.tag_name === version || r.name === version);
-      
+
       if (!release) {
-         release = releases.find((r) => r.tag_name === `v${version}` || r.name === `v${version}`);
+        release = releases.find((r) => r.tag_name === `v${version}` || r.name === `v${version}`);
       }
 
       if (!release) {
         release = releases[0];
-        toast.warning(`Release '${version}' not found. Using latest release '${release.tag_name}'.`);
+        toast.warning(
+          `Release '${version}' not found. Using latest release '${release.tag_name}'.`,
+        );
       }
 
       // 3. Find ELF asset - match against hardware name
-      const elfAsset = release.assets.find((asset) =>
-        asset.name.endsWith('.elf') && asset.name.includes(hardware)
+      const elfAsset = release.assets.find(
+        (asset) => asset.name.endsWith('.elf') && asset.name.includes(hardware),
       );
 
       if (!elfAsset) {
-        throw new Error(`No ELF file found for hardware '${hardware}' in release '${release.tag_name}'`);
+        throw new Error(
+          `No ELF file found for hardware '${hardware}' in release '${release.tag_name}'`,
+        );
       }
 
       // 4. Download via CORS Proxy
@@ -244,39 +263,38 @@ const AppContent = () => {
 
       try {
         const toastId = toast.info(`Downloading ${elfAsset.name}...`, 0);
-        
+
         try {
           const fileRes = await fetchWithCorsProxy(originalUrl);
           if (!fileRes.ok) throw new Error(`Download failed: ${fileRes.statusText}`);
 
           const blob = await fileRes.blob();
-          const file = new File([blob], elfAsset.name, { type: "application/octet-stream" });
+          const file = new File([blob], elfAsset.name, { type: 'application/octet-stream' });
 
           await handleLoadElf(file);
         } finally {
           toast.dismiss(toastId);
         }
       } catch (downloadError) {
-        console.warn("CORS proxy download failed:", downloadError);
+        console.warn('CORS proxy download failed:', downloadError);
         if (isManual) {
           setErrorDialog({
             isOpen: true,
-            title: "Download Failed",
-            message: "Auto-download failed. Opening browser to download manually."
+            title: 'Download Failed',
+            message: 'Auto-download failed. Opening browser to download manually.',
           });
           window.open(originalUrl, '_blank');
         }
       }
-
     } catch (error) {
-       console.error("Failed to fetch release info:", error);
-       if (isManual) {
-         setErrorDialog({
-           isOpen: true,
-           title: "Error Checking Releases",
-           message: error instanceof Error ? error.message : "Unknown error occurred"
-         });
-       }
+      console.error('Failed to fetch release info:', error);
+      if (isManual) {
+        setErrorDialog({
+          isOpen: true,
+          title: 'Error Checking Releases',
+          message: error instanceof Error ? error.message : 'Unknown error occurred',
+        });
+      }
     }
   };
 
@@ -284,7 +302,7 @@ const AppContent = () => {
   React.useEffect(() => {
     espService.onDisconnect = () => {
       handleDisconnect();
-      toast.error("Device disconnected unexpectedly");
+      toast.error('Device disconnected unexpectedly');
     };
     return () => {
       espService.onDisconnect = undefined;
@@ -293,32 +311,32 @@ const AppContent = () => {
 
   const tabs = [
     {
-      label: "Firmware",
+      label: 'Firmware',
       content: <FirmwarePage onLoadElf={handleLoadElf} />,
     },
     {
-      label: "Settings",
+      label: 'Settings',
       content: <SettingsPage />,
     },
     {
-      label: "Float Accessories",
+      label: 'Float Accessories',
       content: <DeviceInfoPage />,
     },
   ];
 
   return (
     <div className="h-screen flex flex-col bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] overflow-hidden">
-      <Header 
+      <Header
         isConnected={deviceInfo.connected}
         isConnecting={isConnecting}
         onConnect={handleConnect}
         onDisconnect={handleDisconnect}
       />
-      <Dialog 
-        isOpen={!!errorDialog?.isOpen} 
+      <Dialog
+        isOpen={!!errorDialog?.isOpen}
         onClose={() => setErrorDialog(null)}
-        title={errorDialog?.title || ""}
-        message={errorDialog?.message || ""}
+        title={errorDialog?.title || ''}
+        message={errorDialog?.message || ''}
       />
       <main className="flex-1 min-h-0 px-4 pb-8 max-w-screen-2xl mx-auto w-full">
         <DeviceToolsProvider
@@ -343,7 +361,13 @@ const AppContent = () => {
                 onLoadElf={handleLoadElf}
                 onDownloadElf={(isManual) => handleDownloadElf(undefined, undefined, isManual)}
                 isElfLoaded={isElfLoaded}
-                updateAvailable={!!(latestVersion && deviceInfo.version && compareVersions(latestVersion, deviceInfo.version) > 0)}
+                updateAvailable={
+                  !!(
+                    latestVersion &&
+                    deviceInfo.version &&
+                    compareVersions(latestVersion, deviceInfo.version) > 0
+                  )
+                }
                 flashProgress={flashProgress}
                 getCompletions={espService.getCompletions}
               />
@@ -359,8 +383,8 @@ const AppContent = () => {
                       onClick={() => setActiveTab(index)}
                       className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
                         activeTab === index
-                          ? "border-blue-500 text-blue-500"
-                          : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700"
+                          ? 'border-blue-500 text-blue-500'
+                          : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
                       }`}
                       aria-selected={activeTab === index}
                     >
@@ -369,10 +393,8 @@ const AppContent = () => {
                   ))}
                 </nav>
               </div>
-              
-              <div className="min-h-0 overflow-y-auto space-y-6">
-                {tabs[activeTab].content}
-              </div>
+
+              <div className="min-h-0 overflow-y-auto space-y-6">{tabs[activeTab].content}</div>
             </div>
           </div>
         </DeviceToolsProvider>
@@ -382,11 +404,11 @@ const AppContent = () => {
 };
 
 const App = () => {
-    return (
-        <ToastProvider>
-            <AppContent />
-        </ToastProvider>
-    )
-}
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
+  );
+};
 
 export default App;

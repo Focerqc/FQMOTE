@@ -1,5 +1,4 @@
 #include "powermanagement.h"
-#include "sleep_timer.h"
 #include "adc.h"
 #include "buzzer.h"
 #include "charge/charge_driver.h"
@@ -21,6 +20,7 @@
 #include "remoteinputs.h"
 #include "screens/charge_screen.h"
 #include "settings.h"
+#include "sleep_timer.h"
 #include "stats.h"
 #include "utilities/number_utils.h"
 #include <driver/ledc.h>
@@ -97,8 +97,8 @@ static esp_err_t enable_wake() {
   const gpio_num_t btn_pin = (gpio_num_t)input_pin_settings.btn1_gpio;
   uint64_t io_mask = BIT64(btn_pin);
 
-  ESP_ERROR_CHECK(esp_sleep_enable_ext1_wakeup(io_mask, input_pin_settings.btn1_active_level ? ESP_EXT1_WAKEUP_ANY_HIGH
-                                                                                           : ESP_EXT1_WAKEUP_ANY_LOW));
+  ESP_ERROR_CHECK(esp_sleep_enable_ext1_wakeup(
+      io_mask, input_pin_settings.btn1_active_level ? ESP_EXT1_WAKEUP_ANY_HIGH : ESP_EXT1_WAKEUP_ANY_LOW));
 
   // The button driver relies on the internal pull to hold the line at its
   // inactive level. Configure the pull at RTC level so it persists through

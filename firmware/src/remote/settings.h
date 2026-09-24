@@ -1,10 +1,11 @@
+// Host tests pre-define this guard to skip the header, so it can't be #pragma once.
 #ifndef __SETTINGS_H
 #define __SETTINGS_H
 #include "display.h"
-#include "settings_types.h"
 #include "esp_system.h"
 #include "led.h"
 #include "nvs_flash.h"
+#include "settings_types.h"
 
 #include "comms.h"
 #include <esp_now.h>

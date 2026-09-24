@@ -21,13 +21,13 @@ export function Badge({ children, variant = 'default', size = 'sm', className }:
           'bg-green-500/10 text-green-500': variant === 'success',
           'bg-cyan-500/10 text-cyan-500': variant === 'info',
           'border border-gray-200 dark:border-gray-800': variant === 'outline',
-          
+
           // Sizes
           'px-2 py-0.5 text-xs': size === 'sm',
           'px-2.5 py-0.5 text-sm': size === 'md',
           'px-3 py-1 text-sm': size === 'lg',
         },
-        className
+        className,
       )}
     >
       {children}

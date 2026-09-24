@@ -1,6 +1,6 @@
 /**
  * CORS Proxy Utility
- * 
+ *
  * Provides functions to fetch GitHub URLs through the CORS proxy.
  * In dev mode, tries localhost first with fallback to production.
  * In production mode, uses api.pubmote.com directly.
@@ -13,32 +13,28 @@ const PROD_PROXY_URL = 'https://api.pubmote.com/cors';
  * Check if running in development mode
  */
 function isDevMode(): boolean {
-  return window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1';
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 }
 
 /**
  * Get the CORS proxy URL based on environment
  */
 export function getCorsProxyUrl(targetUrl: string, useLocalProxy = true): string {
-  const proxyBaseUrl = (isDevMode() && useLocalProxy) ? DEV_PROXY_URL : PROD_PROXY_URL;
+  const proxyBaseUrl = isDevMode() && useLocalProxy ? DEV_PROXY_URL : PROD_PROXY_URL;
   return `${proxyBaseUrl}?${encodeURIComponent(targetUrl)}`;
 }
 
 /**
  * Fetch a URL through the CORS proxy with automatic fallback
- * 
+ *
  * In dev mode:
  * 1. Try local proxy (http://127.0.0.1:8787/cors)
  * 2. If fails, fallback to production proxy (https://api.pubmote.com/cors)
- * 
+ *
  * In production mode:
  * - Use production proxy directly
  */
-export async function fetchWithCorsProxy(
-  url: string,
-  options?: RequestInit
-): Promise<Response> {
+export async function fetchWithCorsProxy(url: string, options?: RequestInit): Promise<Response> {
   // In production, use prod proxy directly
   if (!isDevMode()) {
     const proxyUrl = getCorsProxyUrl(url, false);

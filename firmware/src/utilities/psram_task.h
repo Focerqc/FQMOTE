@@ -1,5 +1,4 @@
-#ifndef __PSRAM_TASK_H
-#define __PSRAM_TASK_H
+#pragma once
 
 #include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
@@ -18,19 +17,14 @@
 //
 // Falls back to an ordinary internal-stack task if PSRAM is unavailable.
 static inline TaskHandle_t create_psram_task(TaskFunction_t fn, const char *name, uint32_t stack_bytes, void *arg,
-                                             UBaseType_t prio, StaticTask_t *tcb, StackType_t **stack)
-{
-    if (*stack == NULL)
-    {
-        *stack = (StackType_t *)heap_caps_malloc(stack_bytes, MALLOC_CAP_SPIRAM);
-    }
-    if (*stack == NULL)
-    {
-        TaskHandle_t handle = NULL;
-        xTaskCreate(fn, name, stack_bytes, arg, prio, &handle);
-        return handle;
-    }
-    return xTaskCreateStatic(fn, name, stack_bytes, arg, prio, *stack, tcb);
+                                             UBaseType_t prio, StaticTask_t *tcb, StackType_t **stack) {
+  if (*stack == NULL) {
+    *stack = (StackType_t *)heap_caps_malloc(stack_bytes, MALLOC_CAP_SPIRAM);
+  }
+  if (*stack == NULL) {
+    TaskHandle_t handle = NULL;
+    xTaskCreate(fn, name, stack_bytes, arg, prio, &handle);
+    return handle;
+  }
+  return xTaskCreateStatic(fn, name, stack_bytes, arg, prio, *stack, tcb);
 }
-
-#endif

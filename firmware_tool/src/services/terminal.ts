@@ -12,7 +12,7 @@ export class TerminalService {
     const entry: LogEntry = {
       message: message.trim(),
       type,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString(),
     };
     this.logs.push(entry);
     this.notifySubscribers(entry);
@@ -28,7 +28,7 @@ export class TerminalService {
   }
 
   private notifySubscribers(log: LogEntry | null): void {
-    this.subscribers.forEach(callback => callback(log));
+    this.subscribers.forEach((callback) => callback(log));
   }
 
   getLogs(): LogEntry[] {
