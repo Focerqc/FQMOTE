@@ -175,7 +175,7 @@ describe('console write queue', () => {
 describe('console response ownership', () => {
   function connected() {
     const service = new ESPService();
-    const write = vi.fn(async () => {});
+    const write = vi.fn(async (_data: Uint8Array) => {});
     const disconnect = vi.fn(async () => {});
     Object.assign(service, { espLoader: { transport: { write, disconnect } } });
     return { service, write, disconnect };
