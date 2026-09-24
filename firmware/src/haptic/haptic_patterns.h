@@ -1,5 +1,4 @@
-#ifndef __HAPTIC_PATTERNS_H
-#define __HAPTIC_PATTERNS_H
+#pragma once
 
 typedef enum {
   HAPTIC_NONE,         ///< No vibration
@@ -12,5 +11,3 @@ typedef enum {
   HAPTIC_ALERT_750MS,  ///< Alert pattern 750ms
   HAPTIC_ALERT_1000MS  ///< Alert pattern 1000ms
 } HapticFeedbackPattern;
-
-#endif

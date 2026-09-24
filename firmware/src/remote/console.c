@@ -4,6 +4,7 @@
 #include "esp_console.h"
 #include "esp_core_dump.h"
 #include "esp_log.h"
+#include "linenoise/linenoise.h"
 #include "powermanagement.h"
 #include "remoteinputs.h"
 #include "settings.h"
@@ -11,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "linenoise/linenoise.h"
 
 // https://github.com/espressif/esp-idf/blob/master/examples/system/console/basic/main/console_example_main.c
 
@@ -130,8 +130,8 @@ static esp_err_t check_and_validate_coredump() {
   esp_err_t err = esp_core_dump_image_check();
   if (err != ESP_OK) {
     if (err == ESP_ERR_INVALID_SIZE || err == ESP_ERR_INVALID_CRC) {
-        printf("coredump: corrupt (err=%d), erasing...\n", err);
-        esp_core_dump_image_erase();
+      printf("coredump: corrupt (err=%d), erasing...\n", err);
+      esp_core_dump_image_erase();
     }
     return err;
   }
@@ -229,20 +229,19 @@ static void register_coredump_erase_command() {
   ESP_ERROR_CHECK(esp_console_cmd_register(&cmd));
 }
 
-
 static int complete_command(int argc, char **argv) {
   if (argc != 2) {
     ESP_LOGE(TAG, "Usage: complete <prefix>");
     return -1;
   }
-  
+
   linenoiseCompletions lc = {0};
   esp_console_get_completion(argv[1], &lc);
-  
+
   for (size_t i = 0; i < lc.len; i++) {
     printf("%s\n", lc.cvec[i]);
   }
-  
+
   for (size_t i = 0; i < lc.len; i++) {
     free(lc.cvec[i]);
   }
@@ -268,7 +267,7 @@ static void console_start(void) {
   ESP_LOGI(TAG, "Initializing console");
   esp_console_repl_t *repl = NULL;
   esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
-  repl_config.task_stack_size = 6144; // JSON parsing and metadata serialization
+  repl_config.task_stack_size = 6144;    // JSON parsing and metadata serialization
   repl_config.max_cmdline_length = 2048; // Includes JSON and console escaping
   /* Prompt to be printed before each line.
    * This can be customized, made dynamic, etc.
@@ -311,7 +310,7 @@ static void console_start(void) {
   }
 
   linenoiseSetCompletionCallback(esp_console_get_completion);
-  linenoiseSetHintsCallback((linenoiseHintsCallback*)esp_console_get_hint);
+  linenoiseSetHintsCallback((linenoiseHintsCallback *)esp_console_get_hint);
   linenoiseSetFreeHintsCallback(free);
 
   err = esp_console_start_repl(repl);

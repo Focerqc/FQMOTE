@@ -1,5 +1,4 @@
-#ifndef _COLORS_H
-#define _COLORS_H
+#pragma once
 
 // Structure
 #define COLOR_BACKGROUND 0x000000
@@ -24,4 +23,3 @@
 #define LED_COLOR_WARNING 0xFF5000  // LEVEL 2
 #define LED_COLOR_CRITICAL 0xFF0000 // LEVEL 3
 #define COLOR_SUCCESS 0x0EAD69
-#endif

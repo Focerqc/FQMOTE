@@ -7,6 +7,6 @@ const useDeviceTools = (): DeviceToolsContextType => {
     throw new Error('useDeviceTools must be used within a DeviceToolsProvider');
   }
   return context;
-}
+};
 
 export default useDeviceTools;

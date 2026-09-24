@@ -3,20 +3,30 @@
   "version": "1.0.0",
   "private": true,
   "description": "Pubmote monorepo",
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@12.6.0+sha512.3ef68f951cb111ac204b4a5a16f0b2ddf0da56a96e0413e81d855d9f0b55ef926714709028e1cd00c405c2c5fb7b9e8ec4dc46777c805d0373c2f2ff00fd20ec",
   "scripts": {
     "dev": "pnpm --filter @pubmote/* dev",
     "firmware-tool:dev": "pnpm --filter @pubmote/firmware-tool dev",
     "firmware-tool:build": "pnpm --filter @pubmote/firmware-tool build",
     "firmware-tool:lint": "pnpm --filter @pubmote/firmware-tool lint",
+    "firmware-tool:typecheck": "pnpm --filter @pubmote/firmware-tool typecheck",
+    "firmware-tool:format": "pnpm --filter @pubmote/firmware-tool format",
+    "firmware-tool:format:check": "pnpm --filter @pubmote/firmware-tool format:check",
     "firmware-tool:preview": "pnpm --filter @pubmote/firmware-tool preview",
     "firmware-tool:deploy": "pnpm --filter @pubmote/firmware-tool run deploy",
     "api:dev": "pnpm --filter @pubmote/api dev",
     "api:deploy": "pnpm --filter @pubmote/api run deploy",
-    "api:typecheck": "pnpm --filter @pubmote/api typecheck"
+    "api:typecheck": "pnpm --filter @pubmote/api typecheck",
+    "lint": "oxlint firmware_tool api",
+    "format": "oxfmt firmware_tool api",
+    "format:check": "oxfmt --check firmware_tool api"
   },
   "engines": {
     "node": ">=18.0.0",
-    "pnpm": ">=9.0.0"
+    "pnpm": ">=12.0.0"
+  },
+  "devDependencies": {
+    "oxfmt": "0.70.0",
+    "oxlint": "1.85.0"
   }
 }

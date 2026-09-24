@@ -1,9 +1,8 @@
-#ifndef __DISPLAY_H
-#define __DISPLAY_H
+#pragma once
 
 #include "esp_err.h"
-#include <stdbool.h>
 #include "settings_types.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -72,6 +71,4 @@ public:
 };
 
 AppWindow *get_slint_window();
-#endif
-
 #endif

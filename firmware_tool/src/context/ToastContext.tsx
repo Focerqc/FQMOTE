@@ -25,12 +25,12 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const addToast = (message: string, type: ToastType, duration?: number) => {
     const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { id, message, type, duration }]);
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
     return id;
   };
 
   const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   const value = {
@@ -40,19 +40,15 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       info: (msg: string, duration?: number) => addToast(msg, 'info', duration),
       warning: (msg: string, duration?: number) => addToast(msg, 'warning', duration),
       dismiss: removeToast,
-    }
+    },
   };
 
   return (
     <ToastContext.Provider value={value}>
       {children}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-        {toasts.map(t => (
-          <Toast
-            key={t.id}
-            {...t}
-            onDismiss={removeToast}
-          />
+        {toasts.map((t) => (
+          <Toast key={t.id} {...t} onDismiss={removeToast} />
         ))}
       </div>
     </ToastContext.Provider>

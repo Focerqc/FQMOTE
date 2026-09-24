@@ -1,16 +1,8 @@
-import React from "react";
-import {
-  Download,
-  Eraser,
-  Eye,
-  EyeOff,
-  RefreshCcw,
-  Save,
-  Upload,
-} from "lucide-react";
-import useDeviceTools from "../hooks/useDeviceTools";
-import { useToast } from "../context/ToastContext";
-import { Dropdown } from "./ui/Dropdown";
+import React from 'react';
+import { Download, Eraser, Eye, EyeOff, RefreshCcw, Save, Upload } from 'lucide-react';
+import useDeviceTools from '../hooks/useDeviceTools';
+import { useToast } from '../context/ToastContext';
+import { Dropdown } from './ui/Dropdown';
 import {
   parseSettings,
   requestSettingsJson,
@@ -19,14 +11,11 @@ import {
   settingsValuesSchema,
   type SettingsMetadata,
   type SettingsValues,
-} from "../services/settingsProtocol";
-import {
-  createSettingsBackup,
-  mergeSettingsBackup,
-} from "../services/settingsBackup";
+} from '../services/settingsProtocol';
+import { createSettingsBackup, mergeSettingsBackup } from '../services/settingsBackup';
 
 const INPUT_CLASSES =
-  "w-full rounded-lg border border-gray-600 bg-[var(--color-bg-tertiary)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:ring-2 focus:ring-blue-500 disabled:opacity-50";
+  'w-full rounded-lg border border-gray-600 bg-[var(--color-bg-tertiary)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:ring-2 focus:ring-blue-500 disabled:opacity-50';
 
 const SettingsPage: React.FC<unknown> = () => {
   const { deviceInfo, flashProgress, espService } = useDeviceTools();
@@ -34,25 +23,23 @@ const SettingsPage: React.FC<unknown> = () => {
   const [metadata, setMetadata] = React.useState<SettingsMetadata | null>(null);
   const [values, setValues] = React.useState<SettingsValues>({});
   const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState("");
+  const [error, setError] = React.useState('');
   const [visible, setVisible] = React.useState<Record<string, boolean>>({});
   const backupInput = React.useRef<HTMLInputElement | null>(null);
-  const [restoreSummary, setRestoreSummary] = React.useState("");
+  const [restoreSummary, setRestoreSummary] = React.useState('');
   const active = React.useRef<AbortController | null>(null);
   const schema = React.useMemo(
     () => (metadata ? settingsValuesSchema(metadata) : null),
     [metadata],
   );
   const available =
-    deviceInfo.connected &&
-    deviceInfo.hasFirmware !== false &&
-    flashProgress.status === "idle";
+    deviceInfo.connected && deviceInfo.hasFirmware !== false && flashProgress.status === 'idle';
   const disabled = !available || busy;
 
   const load = React.useCallback(
     async (signal: AbortSignal, updateForm = true) => {
       const loaded = parseSettings(
-        await requestSettingsJson(espService, "settings", "settings", signal),
+        await requestSettingsJson(espService, 'settings', 'settings', signal),
       );
       if (signal.aborted) return;
       if (updateForm) {
@@ -65,100 +52,88 @@ const SettingsPage: React.FC<unknown> = () => {
   );
 
   const run = React.useCallback(
-    async (
-      operation: "load" | "save" | "reset" | "backup" | "restore" = "load",
-      file?: File,
-    ) => {
+    async (operation: 'load' | 'save' | 'reset' | 'backup' | 'restore' = 'load', file?: File) => {
       if (!available || active.current) return;
       const controller = new AbortController();
       active.current = controller;
       setBusy(true);
-      setError("");
-      setRestoreSummary("");
-      const save = operation === "save";
+      setError('');
+      setRestoreSummary('');
+      const save = operation === 'save';
       try {
         let backup: unknown;
-        if (operation === "restore") {
+        if (operation === 'restore') {
           if (!file || file.size > 65536)
-            throw new Error("Choose a settings backup smaller than 64 KB.");
+            throw new Error('Choose a settings backup smaller than 64 KB.');
           backup = JSON.parse(await file.text());
           if (controller.signal.aborted) return;
         }
-        if (operation === "reset") {
-          await espService.sendCommand("erase", true);
+        if (operation === 'reset') {
+          await espService.sendCommand('erase', true);
           if (controller.signal.aborted) return;
           setMetadata(null);
           setValues({});
           await new Promise<void>((resolve, reject) => {
             const abort = () => {
               clearTimeout(timer);
-              reject(new Error("Settings request cancelled"));
+              reject(new Error('Settings request cancelled'));
             };
             const timer = setTimeout(() => {
-              controller.signal.removeEventListener("abort", abort);
+              controller.signal.removeEventListener('abort', abort);
               resolve();
             }, 4000);
-            controller.signal.addEventListener("abort", abort, { once: true });
+            controller.signal.addEventListener('abort', abort, { once: true });
             if (controller.signal.aborted) abort();
           });
         }
         if (save && metadata && schema) {
           const validated = schema.parse(values);
           const patch = Object.fromEntries(
-            Object.entries(validated).filter(
-              ([key, value]) => value !== metadata.values[key],
-            ),
+            Object.entries(validated).filter(([key, value]) => value !== metadata.values[key]),
           );
           if (Object.keys(patch).length) {
             const result = settingsResultSchema.parse(
               await requestSettingsJson(
                 espService,
                 settingsSaveCommand(patch),
-                "settings_result",
+                'settings_result',
                 controller.signal,
               ),
             );
-            if (!result.ok)
-              throw new Error(result.error || "Device rejected settings");
+            if (!result.ok) throw new Error(result.error || 'Device rejected settings');
           }
         }
         const loaded = await load(
           controller.signal,
-          operation !== "backup" && operation !== "restore",
+          operation !== 'backup' && operation !== 'restore',
         );
         if (!loaded || controller.signal.aborted) return;
-        if (operation === "backup") {
-          const blob = new Blob(
-            [createSettingsBackup(loaded, deviceInfo.version)],
-            { type: "application/json" },
-          );
+        if (operation === 'backup') {
+          const blob = new Blob([createSettingsBackup(loaded, deviceInfo.version)], {
+            type: 'application/json',
+          });
           const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
+          const link = document.createElement('a');
           link.href = url;
           link.download = `pubmote-settings-${new Date().toISOString().slice(0, 10)}.json`;
           link.click();
           setTimeout(() => URL.revokeObjectURL(url), 0);
         }
-        if (operation === "restore") {
+        if (operation === 'restore') {
           const merged = mergeSettingsBackup(loaded, backup);
           setMetadata(loaded);
           setValues(merged.values);
-          let summary =
-            "No compatible settings found. Current device values were kept.";
+          let summary = 'No compatible settings found. Current device values were kept.';
           if (merged.restored)
             summary = `Loaded ${merged.restored} compatible settings. Review the values and press Save to apply.`;
           if (merged.skipped.length)
-            summary += ` Skipped unknown or incompatible fields: ${merged.skipped.join(", ")}.`;
+            summary += ` Skipped unknown or incompatible fields: ${merged.skipped.join(', ')}.`;
           setRestoreSummary(summary);
         }
-        if (save && !controller.signal.aborted)
-          toast.success("Settings saved", 4000);
+        if (save && !controller.signal.aborted) toast.success('Settings saved', 4000);
       } catch (failure) {
         if (!controller.signal.aborted) {
-          const message =
-            failure instanceof Error
-              ? failure.message
-              : "Unable to load settings";
+          const message = failure instanceof Error ? failure.message : 'Unable to load settings';
           setError(message);
           // A storage failure can leave some values applied. Require a fresh read.
           if (save) {
@@ -168,8 +143,7 @@ const SettingsPage: React.FC<unknown> = () => {
             } catch {
               /* Keep the original error visible. */
             }
-          } else if (operation !== "restore" && operation !== "backup")
-            setMetadata(null);
+          } else if (operation !== 'restore' && operation !== 'backup') setMetadata(null);
         }
       } finally {
         if (active.current === controller) {
@@ -178,24 +152,15 @@ const SettingsPage: React.FC<unknown> = () => {
         }
       }
     },
-    [
-      available,
-      deviceInfo.version,
-      espService,
-      load,
-      metadata,
-      schema,
-      toast,
-      values,
-    ],
+    [available, deviceInfo.version, espService, load, metadata, schema, toast, values],
   );
 
   React.useEffect(() => {
     setMetadata(null);
     setValues({});
     setVisible({});
-    setRestoreSummary("");
-    setError("");
+    setRestoreSummary('');
+    setError('');
     if (available) void run();
     return () => {
       active.current?.abort();
@@ -203,18 +168,18 @@ const SettingsPage: React.FC<unknown> = () => {
       setBusy(false);
     };
     // Fetch on connection/flash transitions, not on every form edit.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [available, espService]);
 
-  const renderField = (field: SettingsMetadata["fields"][number]) => {
+  const renderField = (field: SettingsMetadata['fields'][number]) => {
     switch (field.type) {
-      case "integer":
+      case 'integer':
         return (
           <Dropdown
             id={`setting-${field.key}`}
             label={
-              field.options.find((option) => option.value === values[field.key])
-                ?.label || "Choose a value"
+              field.options.find((option) => option.value === values[field.key])?.label ||
+              'Choose a value'
             }
             disabled={disabled}
             value={String(values[field.key])}
@@ -230,52 +195,50 @@ const SettingsPage: React.FC<unknown> = () => {
             }
           />
         );
-      case "range":
+      case 'range':
         return (
           <input
             id={`setting-${field.key}`}
-            type={field.color ? "color" : "number"}
+            type={field.color ? 'color' : 'number'}
             min={field.min}
             max={field.max}
             step={1}
             disabled={disabled}
             value={
               field.color
-                ? `#${Number(values[field.key]).toString(16).padStart(6, "0")}`
-                : (values[field.key] ?? "")
+                ? `#${Number(values[field.key]).toString(16).padStart(6, '0')}`
+                : (values[field.key] ?? '')
             }
             onChange={(event) => {
               let value: string | number = event.target.value;
               if (field.color) value = parseInt(value.slice(1), 16);
-              else if (value !== "") value = event.target.valueAsNumber;
+              else if (value !== '') value = event.target.valueAsNumber;
               setValues((previous) => ({ ...previous, [field.key]: value }));
             }}
             className={INPUT_CLASSES}
           />
         );
-      case "string":
+      case 'string':
         return (
           <div className="relative">
             <input
               id={`setting-${field.key}`}
-              type={field.secret && !visible[field.key] ? "password" : "text"}
+              type={field.secret && !visible[field.key] ? 'password' : 'text'}
               autoComplete="off"
               disabled={disabled}
-              value={values[field.key] ?? ""}
+              value={values[field.key] ?? ''}
               onChange={(event) =>
                 setValues((previous) => ({
                   ...previous,
                   [field.key]: event.target.value,
                 }))
               }
-              className={`${INPUT_CLASSES} ${field.secret ? "pr-10" : ""}`}
+              className={`${INPUT_CLASSES} ${field.secret ? 'pr-10' : ''}`}
             />
             {field.secret && (
               <button
                 type="button"
-                aria-label={
-                  visible[field.key] ? "Hide password" : "Show password"
-                }
+                aria-label={visible[field.key] ? 'Hide password' : 'Show password'}
                 className="absolute inset-y-0 right-0 flex items-center pr-3"
                 onClick={() =>
                   setVisible((previous) => ({
@@ -284,11 +247,7 @@ const SettingsPage: React.FC<unknown> = () => {
                   }))
                 }
               >
-                {visible[field.key] ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {visible[field.key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             )}
           </div>
@@ -300,9 +259,7 @@ const SettingsPage: React.FC<unknown> = () => {
   const changed = metadata?.fields.some(
     (field) => values[field.key] !== metadata.values[field.key],
   );
-  const groups = [
-    ...new Set(metadata?.fields.map((field) => field.group) || []),
-  ];
+  const groups = [...new Set(metadata?.fields.map((field) => field.group) || [])];
 
   return (
     <div className="rounded-lg bg-[var(--color-bg-secondary)] p-6">
@@ -328,7 +285,7 @@ const SettingsPage: React.FC<unknown> = () => {
         <div className="flex flex-wrap gap-3">
           <button
             disabled={disabled || !metadata}
-            onClick={() => void run("backup")}
+            onClick={() => void run('backup')}
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm bg-[var(--color-bg-tertiary)] disabled:opacity-50"
           >
             <Download className="h-4 w-4" /> Save config backup
@@ -348,8 +305,8 @@ const SettingsPage: React.FC<unknown> = () => {
             aria-label="Choose settings backup"
             onChange={(event) => {
               const file = event.target.files?.[0];
-              event.target.value = "";
-              if (file) void run("restore", file);
+              event.target.value = '';
+              if (file) void run('restore', file);
             }}
           />
         </div>
@@ -371,10 +328,7 @@ const SettingsPage: React.FC<unknown> = () => {
                 .filter((field) => field.group === group)
                 .map((field) => (
                   <div key={field.key}>
-                    <label
-                      htmlFor={`setting-${field.key}`}
-                      className="block text-sm mb-1"
-                    >
+                    <label htmlFor={`setting-${field.key}`} className="block text-sm mb-1">
                       {field.label}
                     </label>
                     {renderField(field)}
@@ -386,24 +340,22 @@ const SettingsPage: React.FC<unknown> = () => {
             </div>
           </section>
         ))}
-        {metadata?.warning && (
-          <p className="text-sm text-yellow-300">{metadata.warning}</p>
-        )}
+        {metadata?.warning && <p className="text-sm text-yellow-300">{metadata.warning}</p>}
         {validation && !validation.success && (
           <p role="alert" className="text-sm text-red-400">
-            {validation.error.issues.map((issue) => issue.message).join(". ")}
+            {validation.error.issues.map((issue) => issue.message).join('. ')}
           </p>
         )}
         <div className="border-t pt-4 flex items-center justify-between gap-4">
           <button
             disabled={disabled}
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm bg-[var(--color-danger)]"
-            onClick={() => void run("reset")}
+            onClick={() => void run('reset')}
           >
             <Eraser className="h-4 w-4" /> Factory Reset
           </button>
           <button
-            onClick={() => void run("save")}
+            onClick={() => void run('save')}
             disabled={disabled || !changed || !validation?.success}
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm bg-blue-600 disabled:opacity-50"
           >

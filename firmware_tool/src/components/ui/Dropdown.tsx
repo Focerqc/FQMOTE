@@ -1,6 +1,6 @@
-import React from "react";
-import { createPortal } from "react-dom";
-import { Check } from "lucide-react";
+import React from 'react';
+import { createPortal } from 'react-dom';
+import { Check } from 'lucide-react';
 
 interface DropdownOption {
   value: string;
@@ -22,9 +22,9 @@ interface DropdownProps {
   icon?: React.ReactNode;
   disabled?: boolean;
   className?: string;
-  width?: "auto" | "fixed";
-  dropdownWidth?: "auto" | "button" | number;
-  variant?: "default" | "icon";
+  width?: 'auto' | 'fixed';
+  dropdownWidth?: 'auto' | 'button' | number;
+  variant?: 'default' | 'icon';
 }
 
 // Viewport coordinates, anchored by the trigger's right edge so a content-sized
@@ -49,13 +49,13 @@ export function Dropdown({
   onChange,
   multiple = false,
   label,
-  multipleLabel = "Select Options",
+  multipleLabel = 'Select Options',
   icon,
   disabled = false,
-  className = "",
-  width = "auto",
-  dropdownWidth = "button",
-  variant = "default",
+  className = '',
+  width = 'auto',
+  dropdownWidth = 'button',
+  variant = 'default',
 }: DropdownProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [position, setPosition] = React.useState<MenuPosition | null>(null);
@@ -77,9 +77,9 @@ export function Dropdown({
       top: openUp ? undefined : rect.bottom + TRIGGER_GAP,
       bottom: openUp ? window.innerHeight - rect.top + TRIGGER_GAP : undefined,
       width:
-        typeof dropdownWidth === "number"
+        typeof dropdownWidth === 'number'
           ? dropdownWidth
-          : dropdownWidth === "button"
+          : dropdownWidth === 'button'
             ? rect.width
             : undefined,
       maxWidth: window.innerWidth - VIEWPORT_MARGIN * 2,
@@ -105,19 +105,19 @@ export function Dropdown({
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setIsOpen(false);
+      if (event.key === 'Escape') setIsOpen(false);
     }
 
     // Capture scrolls from ancestor containers, not just the window
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("scroll", updatePosition, true);
-    window.addEventListener("resize", updatePosition);
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("scroll", updatePosition, true);
-      window.removeEventListener("resize", updatePosition);
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
     };
   }, [isOpen, updatePosition]);
 
@@ -150,8 +150,8 @@ export function Dropdown({
 
   const getOptionTooltip = (option: DropdownOption) => {
     if (option.tooltip) return option.tooltip;
-    if (typeof option.label === "string") return option.label;
-    return "";
+    if (typeof option.label === 'string') return option.label;
+    return '';
   };
 
   // In document.body: inside the page flow it gets clipped by ancestor overflow
@@ -162,7 +162,7 @@ export function Dropdown({
           <div
             ref={menuRef}
             style={{
-              position: "fixed",
+              position: 'fixed',
               top: position.top,
               bottom: position.bottom,
               right: position.right,
@@ -192,7 +192,7 @@ export function Dropdown({
                       checked={isSelected(option.value)}
                       onChange={() => handleOptionClick(option.value)}
                       className={`flex-shrink-0 rounded border-gray-600 ${
-                        option.color || "text-blue-500"
+                        option.color || 'text-blue-500'
                       } focus:ring-blue-500 focus:ring-offset-gray-900`}
                     />
                   )}
@@ -207,12 +207,12 @@ export function Dropdown({
               ))}
             </div>
           </div>,
-          document.body
+          document.body,
         )
       : null;
 
   return (
-    <div className={`relative ${width === "fixed" ? "w-45" : ""} ${className}`}>
+    <div className={`relative ${width === 'fixed' ? 'w-45' : ''} ${className}`}>
       <button
         id={id}
         ref={triggerRef}
@@ -222,38 +222,34 @@ export function Dropdown({
         className={`
           flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500
           ${
-            variant === "icon"
+            variant === 'icon'
               ? `p-1 rounded hover:bg-[#2a2a2a] ${
                   disabled
-                    ? "text-gray-600 cursor-not-allowed"
-                    : "text-gray-400 hover:text-gray-200"
+                    ? 'text-gray-600 cursor-not-allowed'
+                    : 'text-gray-400 hover:text-gray-200'
                 }`
               : `gap-2 rounded-lg px-3 py-1.5 text-sm w-full border ${
                   disabled
-                    ? "border-gray-700 text-gray-500 cursor-not-allowed"
-                    : "border-gray-600 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:border-gray-500"
+                    ? 'border-gray-700 text-gray-500 cursor-not-allowed'
+                    : 'border-gray-600 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:border-gray-500'
                 }`
           }
         `}
       >
-        {variant === "icon" ? (
+        {variant === 'icon' ? (
           icon
         ) : (
           <>
             {icon && (
-              <span
-                className={`flex-shrink-0 ${
-                  disabled ? "opacity-50" : "text-gray-500"
-                }`}
-              >
+              <span className={`flex-shrink-0 ${disabled ? 'opacity-50' : 'text-gray-500'}`}>
                 {icon}
               </span>
             )}
             <span className="flex-1 text-left truncate">{label}</span>
             <svg
               className={`h-4 w-4 flex-shrink-0 fill-current ${
-                disabled ? "text-gray-600" : "text-gray-400"
-              } transition-transform ${isOpen ? "rotate-180" : ""}`}
+                disabled ? 'text-gray-600' : 'text-gray-400'
+              } transition-transform ${isOpen ? 'rotate-180' : ''}`}
               viewBox="0 0 20 20"
             >
               <path

@@ -1,5 +1,4 @@
-#ifndef __CONSOLE_H
-#define __CONSOLE_H
+#pragma once
 #include <stdint.h>
 #include <stdio.h>
 
@@ -8,12 +7,10 @@ extern "C"
 {
 #endif
 
-    void console_init();
+  void console_init();
 
-    void console_poll_usb();
+  void console_poll_usb();
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif
