@@ -6,10 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define __CONFIG_H
 #define IMU_ENABLED 1
-#define __SETTINGS_H
-#define __REMOTEINPUTS_H
 #include "../firmware/src/remote/input_settings.h"
 #include "../firmware/src/remote/settings_api.h"
 #include "../firmware/src/remote/settings_types.h"
@@ -164,9 +161,9 @@ esp_err_t input_pins_apply(const InputPinSettings *p, char *err, size_t n) {
   ++applies;
   return 0;
 }
-#include "../firmware/src/remote/input_settings.c"
-#include "../firmware/src/remote/settings_api.c"
-#include "../firmware/src/remote/settings_console.c"
+#include "remote/input_settings.c"
+#include "remote/settings_api.c"
+#include "remote/settings_console.c"
 size_t esp_console_split_argv(char *line, char **argv, size_t argv_size);
 
 static int allocation_attempts, fail_allocation_at, outstanding_allocations;

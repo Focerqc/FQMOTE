@@ -6,12 +6,24 @@ if(NOT EXISTS "${IDF_PATH}/components/json/cJSON/cJSON.c")
   message(FATAL_ERROR "Set IDF_PATH to an ESP-IDF checkout (including its cJSON submodule)")
 endif()
 
+# The firmware sources under test include config.h, settings.h and remoteinputs.h,
+# which pull in the whole device. Copy them next to empty stand-ins from shadow/:
+# a quoted include searches the including file's own directory first.
+set(STAGED "${CMAKE_BINARY_DIR}/staged")
+set(FIRMWARE_REMOTE "${CMAKE_SOURCE_DIR}/../firmware/src/remote")
+foreach(src input_settings.c settings_api.c settings_console.c sleep_timer.c)
+  configure_file("${FIRMWARE_REMOTE}/${src}" "${STAGED}/remote/${src}" COPYONLY)
+endforeach()
+foreach(stub config.h remote/settings.h remote/remoteinputs.h)
+  configure_file("${CMAKE_SOURCE_DIR}/shadow/${stub}" "${STAGED}/${stub}" COPYONLY)
+endforeach()
+
 add_executable(settings_console_test
   settings_console_test.c
   "${IDF_PATH}/components/json/cJSON/cJSON.c"
   "${IDF_PATH}/components/console/split_argv.c"
 )
-target_include_directories(settings_console_test PRIVATE "${IDF_PATH}/components/json/cJSON")
+target_include_directories(settings_console_test PRIVATE "${STAGED}" "${FIRMWARE_REMOTE}" "${IDF_PATH}/components/json/cJSON")
 set_target_properties(settings_console_test PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED YES)
 if(MSVC)
   target_compile_definitions(settings_console_test PRIVATE _CRT_SECURE_NO_WARNINGS)
@@ -25,7 +37,7 @@ enable_testing()
 add_test(NAME settings_console COMMAND settings_console_test)
 
 add_executable(sleep_timer_test sleep_timer_test.c)
-target_include_directories(sleep_timer_test PRIVATE stubs)
+target_include_directories(sleep_timer_test PRIVATE "${STAGED}" "${FIRMWARE_REMOTE}" stubs)
 set_target_properties(sleep_timer_test PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED YES)
 if(MSVC)
   target_compile_options(sleep_timer_test PRIVATE /UNDEBUG)

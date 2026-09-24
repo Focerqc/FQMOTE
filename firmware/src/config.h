@@ -1,6 +1,4 @@
-// Host tests pre-define this guard to skip the header, so it can't be #pragma once.
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#pragma once
 
 // Set in env
 // Powershell: $env:PLATFORMIO_BUILD_FLAGS='-D RELEASE_VARIANT=\"release\"'
@@ -139,6 +137,4 @@
 
 #ifndef IMU_SWAP_XY
   #define IMU_SWAP_XY 0
-#endif
-
 #endif

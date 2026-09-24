@@ -1,13 +1,12 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
-#define __SETTINGS_H
 #define ESP_OK 0
 #define ESP_ERR_INVALID_STATE 0x103
 #define ESP_ERROR_CHECK(result) assert((result) == ESP_OK)
 typedef int esp_err_t;
 uint64_t get_auto_off_ms(void);
-#include "../firmware/src/remote/sleep_timer.c"
+#include "remote/sleep_timer.c"
 
 static uint64_t duration = 300000;
 static int64_t now;

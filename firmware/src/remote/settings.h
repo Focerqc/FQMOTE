@@ -1,6 +1,4 @@
-// Host tests pre-define this guard to skip the header, so it can't be #pragma once.
-#ifndef __SETTINGS_H
-#define __SETTINGS_H
+#pragma once
 #include "display.h"
 #include "esp_system.h"
 #include "led.h"
@@ -136,6 +134,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

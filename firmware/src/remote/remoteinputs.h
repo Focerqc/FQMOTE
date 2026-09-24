@@ -1,6 +1,4 @@
-// Host tests pre-define this guard to skip the header, so it can't be #pragma once.
-#ifndef __REMOTEINPUTS_H
-#define __REMOTEINPUTS_H
+#pragma once
 #include "adc.h"
 #include "driver/gpio.h"
 #include "esp_err.h"
@@ -86,6 +84,4 @@ extern "C"
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif
