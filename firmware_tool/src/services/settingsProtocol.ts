@@ -113,10 +113,18 @@ type LogListener = (
 ) => boolean;
 // Structural subset keeps the protocol independent of the serial implementation.
 export interface SettingsTransport {
+  withConsoleTransaction?<T>(
+    operation: (transport: SettingsTransport) => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T>;
   addLogListener(listener: LogListener): void;
   removeLogListener(listener: LogListener): void;
   sendCommand(command: string, silent?: boolean): Promise<void>;
 }
+
+// The session prefix keeps replies to a previous page load from matching.
+const requestPrefix = Math.random().toString(36).slice(2, 8);
+let requestCount = 0;
 
 export function requestSettingsJson(
   transport: SettingsTransport,
@@ -124,6 +132,13 @@ export function requestSettingsJson(
   kind: "settings" | "settings_result",
   signal?: AbortSignal,
 ): Promise<unknown> {
+  if (transport.withConsoleTransaction) {
+    return transport.withConsoleTransaction(
+      (exclusive) => requestSettingsJson(exclusive, command, kind, signal),
+      signal,
+    );
+  }
+  const id = `${requestPrefix}${++requestCount}`;
   return new Promise((resolve, reject) => {
     let settled = false;
     const finish = (error?: Error, payload?: unknown) => {
@@ -146,8 +161,11 @@ export function requestSettingsJson(
       }
       if (!payload || typeof payload !== "object" || !("kind" in payload))
         return false;
-      if (payload.kind === "settings_result") {
-        const result = settingsResultSchema.safeParse(payload);
+      if (!("id" in payload) || payload.id !== id) return false;
+      const reply: { kind?: unknown; id?: unknown } = { ...payload };
+      delete reply.id;
+      if (reply.kind === "settings_result") {
+        const result = settingsResultSchema.safeParse(reply);
         if (!result.success) {
           finish(new Error("Invalid settings acknowledgement from device"));
         } else if (!result.data.ok) {
@@ -157,8 +175,8 @@ export function requestSettingsJson(
         } else {
           return false;
         }
-      } else if (payload.kind === kind) {
-        finish(undefined, payload);
+      } else if (reply.kind === kind) {
+        finish(undefined, reply);
       } else return false;
       return true;
     };
@@ -180,7 +198,7 @@ export function requestSettingsJson(
     // Avoid logging commands containing Wi-Fi credentials.
     try {
       transport
-        .sendCommand(command, true)
+        .sendCommand(`${command} ${id}`, true)
         .catch((error: unknown) =>
           finish(
             error instanceof Error

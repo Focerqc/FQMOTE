@@ -10,7 +10,13 @@
 #define IMU_ENABLED 1
 #define __SETTINGS_H
 #define __REMOTEINPUTS_H
+#include "../firmware/src/remote/input_settings.h"
+#include "../firmware/src/remote/settings_api.h"
 #include "../firmware/src/remote/settings_types.h"
+#define STICK_MIN_VAL 0
+#define STICK_MAX_VAL 4095
+#define STICK_MID_VAL 2048
+#define STICK_DEADBAND 50
 #define ESP_OK 0
 #define ESP_ERR_INVALID_ARG 0x102
 typedef int esp_err_t;
@@ -49,6 +55,30 @@ static DeviceSettings previous_refresh;
 void display_refresh_device_settings(const DeviceSettings *previous) {
   previous_refresh = *previous;
   ++refreshes;
+}
+CalibrationSettings calibration_settings = {
+    .x_min = 10, .x_max = 4000, .x_center = 2000, .y_min = 20, .y_max = 3900, .y_center = 2100, .deadband = 70};
+static unsigned char input_blob[128];
+static size_t input_blob_size;
+static bool blob_write_fails, commit_error_after_write;
+static int timer_resets;
+void reset_sleep_timer(void) { ++timer_resets; }
+esp_err_t nvs_write_blob(const char *key, void *value, size_t size) {
+  assert(!strcmp(key, "input_state") && size <= sizeof(input_blob));
+  if (blob_write_fails) {
+    return -1;
+  }
+  memcpy(input_blob, value, size);
+  input_blob_size = size;
+  return commit_error_after_write ? -1 : ESP_OK;
+}
+esp_err_t nvs_read_blob(const char *key, void *value, size_t size) {
+  assert(!strcmp(key, "input_state"));
+  if (!input_blob_size || input_blob_size > size) {
+    return -1;
+  }
+  memcpy(value, input_blob, input_blob_size);
+  return ESP_OK;
 }
 static char ssid[WIFI_SSID_MAX_BYTES + 1] = "";
 static char password[WIFI_PASSWORD_MAX_BYTES + 1] = "";
@@ -125,10 +155,16 @@ esp_err_t input_pins_apply(const InputPinSettings *p, char *err, size_t n) {
   if (fail_apply) {
     return -1;
   }
+  if (settings_save_input_pins(p) != ESP_OK) {
+    return -1;
+  }
+  settings_reset_calibration(&calibration_settings, p->js_x_gpio != input_pin_settings.js_x_gpio,
+                             p->js_y_gpio != input_pin_settings.js_y_gpio);
   input_pin_settings = *p;
   ++applies;
   return 0;
 }
+#include "../firmware/src/remote/input_settings.c"
 #include "../firmware/src/remote/settings_api.c"
 #include "../firmware/src/remote/settings_console.c"
 size_t esp_console_split_argv(char *line, char **argv, size_t argv_size);
@@ -191,6 +227,37 @@ static int save(const char *json) {
   return console_save_settings(2, args);
 }
 
+static void test_input_record(void) {
+  // Persist a calibration on the original mapping, then simulate interrupted remaps.
+  calibration_settings.x_center = 1900;
+  calibration_settings.y_center = 2200;
+  assert(settings_store_input_state(&input_pin_settings, &calibration_settings) == ESP_OK);
+  InputPinSettings next = input_pin_settings;
+  next.js_x_gpio = -1;
+  InputPinSettings loaded;
+  CalibrationSettings calibration;
+  blob_write_fails = true;
+  assert(settings_save_input_pins(&next) != ESP_OK);
+  blob_write_fails = false;
+  assert(settings_load_input_state(&loaded, &calibration) == ESP_OK);
+  assert(loaded.js_x_gpio == 1 && calibration.x_center == 1900);
+  // A commit error can leave the new blob durable. It must still be a complete pair.
+  commit_error_after_write = true;
+  assert(settings_save_input_pins(&next) != ESP_OK);
+  commit_error_after_write = false;
+  assert(input_pin_settings.js_x_gpio == 1 && calibration_settings.x_center == 1900);
+  assert(settings_load_input_state(&loaded, &calibration) == ESP_OK);
+  assert(loaded.js_x_gpio == -1 && calibration.x_center == STICK_MID_VAL);
+  assert(calibration.y_center == 2200 && calibration.deadband == STICK_DEADBAND);
+  // Truncated or future records must not overwrite the caller's legacy defaults.
+  input_blob_size = 4;
+  loaded.js_x_gpio = 42;
+  assert(settings_load_input_state(&loaded, &calibration) != ESP_OK && loaded.js_x_gpio == 42);
+  assert(settings_store_input_state(&input_pin_settings, &calibration_settings) == ESP_OK);
+  input_blob[0] = 99;
+  assert(settings_load_input_state(&loaded, &calibration) != ESP_OK && loaded.js_x_gpio == 42);
+}
+
 static void test_device_preferences(void) {
   assert(settings_save_device_preferences() == ESP_OK);
   assert(device_writes == 13);
@@ -198,6 +265,7 @@ static void test_device_preferences(void) {
               "2,\"hbm_mode\":2,\"auto_off_time\":5,\"pocket_mode\":1,\"temp_units\":1,\"distance_units\":1,\"startup_"
               "sound\":2,\"stats_dp\":1,\"led_mode\":2}") == 0);
   assert(device_writes == 26);
+  assert(timer_resets == 1);
   assert(device_settings.bl_level == 10 && device_settings.theme_color == 16777215);
   assert(refreshes == 1 && previous_refresh.bl_level == 200);
   assert(save("{\"bl_level\":10}") == 0 && device_writes == 26 && refreshes == 1);
@@ -269,7 +337,8 @@ int main(int argc, char **argv) {
     if (console_save_settings(count, args) != 0) {
       return 1;
     }
-    return console_get_settings(1, argv);
+    char *get[] = {"settings", count == 3 ? args[2] : NULL};
+    return console_get_settings(count == 3 ? 2 : 1, get);
   }
   assert(save("{\"wifi_ssid\":\"hello\",\"js_x_gpio\":1,\"js_y_gpio\":2}") == 0);
   assert(writes == 1 && applies == 1 && !strcmp(ssid, "hello"));
@@ -307,7 +376,17 @@ int main(int argc, char **argv) {
   size_t count = esp_console_split_argv(line, args, 4);
   assert(count == 2 && console_save_settings((int)count, args) == 0);
   assert(!strcmp(ssid, "  a \"b\" \\ c  "));
-  fail_write = true;
+  char *tagged[] = {"save_settings", "{\"wifi_ssid\":\"tagged\"}", "r1-a_B"};
+  assert(console_save_settings(3, tagged) == 0 && !strcmp(ssid, "tagged"));
+  char *get_tagged[] = {"settings", "r1"};
+  assert(console_get_settings(2, get_tagged) == 0);
+  const char *bad_ids[] = {"", "has space", "quo\"te", "123456789012345678901234567890123"};
+  for (size_t i = 0; i < sizeof(bad_ids) / sizeof(bad_ids[0]); ++i) {
+    char *bad_save[] = {"save_settings", "{\"wifi_ssid\":\"rejected\"}", (char *)bad_ids[i]};
+    char *bad_get[] = {"settings", (char *)bad_ids[i]};
+    assert(console_save_settings(3, bad_save) != 0 && !strcmp(ssid, "tagged"));
+    assert(console_get_settings(2, bad_get) != 0);
+  }
   assert(save("{\"wifi_ssid\":\"failure\"}") != 0);
   fail_write = false;
   fail_apply = true;
@@ -322,9 +401,14 @@ int main(int argc, char **argv) {
   assert(settings_save_string("js_x_gpio", "1") != ESP_OK);
   assert(settings_save_string("wifi_ssid", NULL) != ESP_OK);
   assert(settings_save_input_pins(&input_pin_settings) == ESP_OK);
-  assert(saved_pins[0] == 1 && saved_pins[1] == 2 && saved_pins[2] == UINT32_MAX && saved_pins[3] == 0);
-  fail_pin_write = true;
+  InputPinSettings loaded_pins;
+  CalibrationSettings loaded_calibration;
+  assert(settings_load_input_state(&loaded_pins, &loaded_calibration) == ESP_OK);
+  assert(!memcmp(&loaded_pins, &input_pin_settings, sizeof(loaded_pins)));
+  blob_write_fails = true;
   assert(settings_save_input_pins(&input_pin_settings) != ESP_OK);
+  blob_write_fails = false;
+  test_input_record();
   test_device_preferences();
   test_allocation_failures();
   puts("settings console tests passed");

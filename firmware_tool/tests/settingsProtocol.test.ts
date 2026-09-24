@@ -88,14 +88,23 @@ type LogListener = Parameters<SettingsTransport["addLogListener"]>[0];
 
 function transport(send: SettingsTransport["sendCommand"] = async () => {}) {
   const listeners = new Set<LogListener>();
+  const sent: string[] = [];
+  const emit = (line: string) => {
+    for (const listener of [...listeners]) listener(line, "info");
+  };
   return {
     listeners,
+    sent,
     addLogListener: (listener: LogListener) => listeners.add(listener),
     removeLogListener: (listener: LogListener) => listeners.delete(listener),
-    sendCommand: send,
-    emit: (line: string) => {
-      for (const listener of [...listeners]) listener(line, "info");
+    sendCommand: (command: string, silent?: boolean) => {
+      sent.push(command);
+      return send(command, silent);
     },
+    emit,
+    // Answer the most recent request the way firmware does, echoing its id.
+    reply: (body: object) =>
+      emit(JSON.stringify({ ...body, id: sent.at(-1)?.split(" ").at(-1) })),
   };
 }
 
@@ -106,7 +115,7 @@ test("waits for typed JSON, ignores prompts/logs, and cleans up after acknowledg
   serial.emit("wifi_ssid: old firmware");
   serial.emit("{bad json");
   assert.equal(serial.listeners.size, 1);
-  serial.emit(JSON.stringify(payload()));
+  serial.reply(payload());
   assert.deepEqual(await request, payload());
   assert.equal(serial.listeners.size, 0);
 });
@@ -118,9 +127,12 @@ test("device rejection, send failure and cancellation reject and remove listener
     "save_settings",
     "settings_result",
   );
-  serial.emit(
-    '{"kind":"settings_result","version":1,"ok":false,"error":"pins conflict"}',
-  );
+  serial.reply({
+    kind: "settings_result",
+    version: 1,
+    ok: false,
+    error: "pins conflict",
+  });
   await assert.rejects(request, /pins conflict/);
   assert.equal(serial.listeners.size, 0);
   const failing = transport(async () => {
@@ -165,13 +177,15 @@ test.skipIf(!process.env.SETTINGS_CONSOLE_TEST_BIN)(
     };
     settingsValuesSchema(metadata).parse({ ...metadata.values, ...patch });
     const lines = execFileSync(binary, ["command"], {
-      input: settingsSaveCommand(patch) + "\n",
+      input: settingsSaveCommand(patch) + " t1\n",
       encoding: "utf8",
     })
       .trim()
       .split(/\r?\n/)
       .map((line) => JSON.parse(line));
     assert.equal(lines[0].ok, true);
+    assert.equal(lines[0].id, "t1");
+    assert.equal(lines[1].id, "t1");
     const applied = parseSettings(lines[1]);
     for (const [key, value] of Object.entries(patch))
       assert.equal(applied.values[key], value);
@@ -203,7 +217,7 @@ test.each([
     "save_settings",
     "settings_result",
   );
-  serial.emit(JSON.stringify(reply));
+  serial.reply(reply);
   await assert.rejects(request, /Invalid settings acknowledgement/);
   assert.equal(serial.listeners.size, 0);
 });
@@ -241,10 +255,42 @@ test("synchronous send failure removes listeners and timers", async () => {
 test("an unrelated successful acknowledgement does not complete a metadata request", async () => {
   const serial = transport();
   const request = requestSettingsJson(serial, "settings", "settings");
-  serial.emit('{"kind":"settings_result","version":1,"ok":true}');
+  serial.reply({ kind: "settings_result", version: 1, ok: true });
   assert.equal(serial.listeners.size, 1);
-  serial.emit(JSON.stringify(payload()));
+  serial.reply(payload());
   assert.deepEqual(await request, payload());
+});
+
+test("replies to other requests are ignored, even failures", async () => {
+  const serial = transport();
+  const request = requestSettingsJson(
+    serial,
+    "save_settings",
+    "settings_result",
+  );
+  const [command, id] = serial.sent[0].split(" ");
+  assert.equal(command, "save_settings");
+  assert.match(id, /^[a-z0-9]{1,32}$/);
+  const failure = { kind: "settings_result", version: 1, ok: false };
+  serial.emit(JSON.stringify({ ...failure, error: "stale", id: "old1" }));
+  serial.emit(JSON.stringify({ ...failure, error: "untagged" }));
+  assert.equal(serial.listeners.size, 1);
+  serial.reply({ kind: "settings_result", version: 1, ok: true });
+  assert.deepEqual(await request, {
+    kind: "settings_result",
+    version: 1,
+    ok: true,
+  });
+  const controller = new AbortController();
+  const next = requestSettingsJson(
+    serial,
+    "settings",
+    "settings",
+    controller.signal,
+  );
+  assert.notEqual(serial.sent[1].split(" ")[1], id);
+  controller.abort();
+  await assert.rejects(next, /cancelled/);
 });
 
 test.each(["constructor", "prototype", "__proto__"])(

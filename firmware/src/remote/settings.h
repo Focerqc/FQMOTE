@@ -79,19 +79,6 @@ extern "C"
     int8_t default_index; // -1 if none selected
   } PairingSettings;
 
-  typedef struct {
-    uint16_t x_min;
-    uint16_t x_max;
-    uint16_t y_min;
-    uint16_t y_max;
-    uint16_t x_center;
-    uint16_t y_center;
-    uint16_t deadband;
-    bool invert_y;
-    bool invert_x;
-    float expo;
-  } CalibrationSettings;
-
   // The assignment baked in at build time
   void input_pins_load_defaults(InputPinSettings *out);
 

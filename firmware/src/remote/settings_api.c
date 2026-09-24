@@ -3,6 +3,7 @@
 #include "cJSON.h"
 #include "remoteinputs.h"
 #include "settings.h"
+#include "powermanagement.h"
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -262,22 +263,6 @@ int settings_save_string(const char *key, const char *value) {
 static int pin_value(const SettingDescriptor *field, const InputPinSettings *pins) {
   const uint8_t *value = (const uint8_t *)pins + field->pin_offset;
   return field->choices ? (int)(int8_t)*value : *value;
-}
-
-int settings_save_input_pins(const InputPinSettings *pins) {
-  if (!pins) {
-    return ESP_ERR_INVALID_ARG;
-  }
-  for (size_t i = 0; i < FIELD_COUNT; ++i) {
-    if (fields[i].max_bytes || fields[i].read_number) {
-      continue;
-    }
-    esp_err_t result = nvs_write_int(fields[i].key, (uint32_t)(int32_t)pin_value(&fields[i], pins));
-    if (result != ESP_OK) {
-      return result;
-    }
-  }
-  return ESP_OK;
 }
 
 static bool allowed_number(const SettingDescriptor *field, double value) {
@@ -562,6 +547,9 @@ int settings_apply_json(const char *json, char *error_out, size_t error_size) {
             break;
           }
           fields[i].apply_number(value);
+          if (!strcmp(fields[i].key, "auto_off_time")) {
+            reset_sleep_timer();
+          }
           preferences_dirty = true;
         }
       }

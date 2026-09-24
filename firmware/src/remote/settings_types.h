@@ -1,4 +1,5 @@
 #pragma once
+#include <stdbool.h>
 #include <stdint.h>
 
 // Shared by storage validation and the metadata exposed to clients.
@@ -116,3 +117,16 @@ typedef struct {
   const char *const *labels;
   uint8_t count;
 } SettingOptions;
+
+typedef struct {
+  uint16_t x_min;
+  uint16_t x_max;
+  uint16_t y_min;
+  uint16_t y_max;
+  uint16_t x_center;
+  uint16_t y_center;
+  uint16_t deadband;
+  bool invert_y;
+  bool invert_x;
+  float expo;
+} CalibrationSettings;

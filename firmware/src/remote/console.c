@@ -94,7 +94,7 @@ static void register_erase_command() {
 static void register_get_settings_command() {
   esp_console_cmd_t cmd = {
       .command = "settings",
-      .help = "Get settings values and metadata as one JSON object",
+      .help = "Get settings values and metadata as one JSON object, echoing an optional request id",
       .func = &console_get_settings,
   };
   ESP_ERROR_CHECK(esp_console_cmd_register(&cmd));
@@ -103,7 +103,7 @@ static void register_get_settings_command() {
 static void register_save_settings_command() {
   esp_console_cmd_t cmd = {
       .command = "save_settings",
-      .help = "Save a JSON object of changed settings (one escaped, quoted argument)",
+      .help = "Save a JSON object of changed settings (one escaped, quoted argument) with an optional request id",
       .func = &console_save_settings,
   };
   ESP_ERROR_CHECK(esp_console_cmd_register(&cmd));

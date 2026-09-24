@@ -1,4 +1,5 @@
 #include "powermanagement.h"
+#include "sleep_timer.h"
 #include "adc.h"
 #include "buzzer.h"
 #include "charge/charge_driver.h"
@@ -370,65 +371,8 @@ static void enter_sleep_internal() {
   esp_deep_sleep_start(); // No code executes after esp_deep_sleep_start()
 }
 
-esp_timer_handle_t sleep_timer;
-static SemaphoreHandle_t timer_mutex = NULL;
-
-// Call this during initialization
-static void init_sleep_timer() {
-  timer_mutex = xSemaphoreCreateMutex();
-  assert(timer_mutex != NULL);
-}
-
-static uint64_t get_sleep_timer_time_ms() {
-  return get_auto_off_ms();
-}
-
-void sleep_timer_callback(void *arg) {
-  // Take mutex if you're modifying shared resources
-  if (xSemaphoreTake(timer_mutex, portMAX_DELAY) == pdTRUE) {
-    // Enter deep sleep mode when the deep sleep timer expires
-    ESP_LOGI(TAG, "Sleep timer expired. Entering sleep mode.");
-    shutdown_initiated = true;
-
-    xSemaphoreGive(timer_mutex);
-  }
-}
-
-void reset_sleep_timer() {
-  if (timer_mutex == NULL) {
-    ESP_LOGE(TAG, "Timer mutex not initialized!");
-    return;
-  }
-
-  if (xSemaphoreTake(timer_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
-    ESP_LOGE(TAG, "Could not take timer mutex!");
-    return;
-  }
-
-  int duration_ms = get_sleep_timer_time_ms();
-
-  if (duration_ms == 0) {
-    ESP_LOGD(TAG, "Deep sleep timer disabled.");
-    xSemaphoreGive(timer_mutex);
-    return;
-  }
-
-  // Handle existing timer or create a new one
-  if (sleep_timer != NULL) {
-    if (esp_timer_is_active(sleep_timer)) {
-      ESP_ERROR_CHECK(esp_timer_stop(sleep_timer));
-    }
-  }
-  else {
-    esp_timer_create_args_t sleep_timer_args = {
-        .callback = sleep_timer_callback, .arg = NULL, .dispatch_method = ESP_TIMER_TASK, .name = "SleepTimer"};
-    ESP_ERROR_CHECK(esp_timer_create(&sleep_timer_args, &sleep_timer));
-  }
-
-  ESP_ERROR_CHECK(esp_timer_start_once(sleep_timer, duration_ms * 1000));
-  ESP_LOGD(TAG, "Sleep timer started for %d ms", duration_ms);
-
-  xSemaphoreGive(timer_mutex);
+static void sleep_timer_expired(void) {
+  shutdown_initiated = true;
 }
 
 void power_management_task(void *pvParameters) {
@@ -549,7 +493,7 @@ void power_management_init() {
 
   bool power_was_connected = is_power_connected;
   ESP_ERROR_CHECK(charge_driver_init());
-  init_sleep_timer();
+  sleep_timer_init(sleep_timer_expired);
   vTaskDelay(pdMS_TO_TICKS(50)); // Allow time for peripherals to initialize
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
   uint64_t wakeup_pin_mask = esp_sleep_get_ext1_wakeup_status();

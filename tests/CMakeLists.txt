@@ -23,3 +23,13 @@ endif()
 
 enable_testing()
 add_test(NAME settings_console COMMAND settings_console_test)
+
+add_executable(sleep_timer_test sleep_timer_test.c)
+target_include_directories(sleep_timer_test PRIVATE stubs)
+set_target_properties(sleep_timer_test PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED YES)
+if(MSVC)
+  target_compile_options(sleep_timer_test PRIVATE /UNDEBUG)
+else()
+  target_compile_options(sleep_timer_test PRIVATE -UNDEBUG -Wall -Wextra)
+endif()
+add_test(NAME sleep_timer COMMAND sleep_timer_test)

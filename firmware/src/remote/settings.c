@@ -1,5 +1,7 @@
 #include "settings.h"
 #include "settings_api.h"
+#include "input_settings.h"
+#include "powermanagement.h"
 #include "config.h"
 #include "connection.h"
 #include "display.h"
@@ -447,6 +449,7 @@ bool is_pocket_mode_enabled() {
 }
 
 void save_device_settings() {
+  reset_sleep_timer();
   esp_err_t result = settings_save_device_preferences();
   if (result != ESP_OK) {
     ESP_LOGE(TAG, "Failed to save device settings: %s", esp_err_to_name(result));
@@ -567,16 +570,10 @@ esp_err_t save_pairing_data() {
 }
 
 void save_input_calibration() {
-  nvs_write_int("x_min", calibration_settings.x_min);
-  nvs_write_int("x_max", calibration_settings.x_max);
-  nvs_write_int("y_min", calibration_settings.y_min);
-  nvs_write_int("y_max", calibration_settings.y_max);
-  nvs_write_int("x_center", calibration_settings.x_center);
-  nvs_write_int("y_center", calibration_settings.y_center);
-  nvs_write_int("deadband", calibration_settings.deadband);
-  nvs_write_int("expo", (int)(calibration_settings.expo * EXPO_ADJUST_FACTOR));
-  nvs_write_int("invert_x", calibration_settings.invert_x);
-  nvs_write_int("invert_y", calibration_settings.invert_y);
+  esp_err_t result = settings_store_input_state(&input_pin_settings, &calibration_settings);
+  if (result != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to save input calibration: %s", esp_err_to_name(result));
+  }
 }
 
 void input_pins_load_defaults(InputPinSettings *out) {
@@ -601,20 +598,7 @@ void input_pins_load_defaults(InputPinSettings *out) {
 }
 
 void reset_axis_calibration(bool reset_x, bool reset_y) {
-  if (reset_x) {
-    calibration_settings.x_min = STICK_MIN_VAL;
-    calibration_settings.x_max = STICK_MAX_VAL;
-    calibration_settings.x_center = STICK_MID_VAL;
-  }
-  if (reset_y) {
-    calibration_settings.y_min = STICK_MIN_VAL;
-    calibration_settings.y_max = STICK_MAX_VAL;
-    calibration_settings.y_center = STICK_MID_VAL;
-  }
-  if (reset_x || reset_y) {
-    calibration_settings.deadband = STICK_DEADBAND;
-    save_input_calibration();
-  }
+  settings_reset_calibration(&calibration_settings, reset_x, reset_y);
 }
 
 void save_imu_calibration() {
@@ -751,12 +735,18 @@ esp_err_t settings_init() {
   stored_pins.btn1_active_level =
       nvs_read_int("btn1_level", &temp_setting_value) == ESP_OK ? (temp_setting_value ? 1 : 0) : stored_pins.btn1_active_level;
 
+  CalibrationSettings stored_calibration;
+  if (settings_load_input_state(&stored_pins, &stored_calibration) == ESP_OK) {
+    calibration_settings = stored_calibration;
+  }
+
   char pin_err[96];
   if (input_pins_validate(&stored_pins, pin_err, sizeof(pin_err)) == ESP_OK) {
     input_pin_settings = stored_pins;
   }
   else {
     ESP_LOGE(TAG, "Stored input pins rejected (%s) - using board defaults", pin_err);
+    settings_reset_calibration(&calibration_settings, true, true);
   }
   ESP_LOGI(TAG, "Input pins: js_x=%d js_y=%d btn=%d (level %u)", input_pin_settings.js_x_gpio,
            input_pin_settings.js_y_gpio, input_pin_settings.btn1_gpio, input_pin_settings.btn1_active_level);
