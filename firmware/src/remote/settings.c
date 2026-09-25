@@ -36,6 +36,9 @@ static const StatsDoublePressAction DEFAULT_DOUBLE_PRESS_ACTION = DOUBLE_PRESS_A
 // Solid theme colour - the behaviour before led_mode was configurable
 static const LedModeOptions DEFAULT_LED_MODE = LED_MODE_SOLID;
 static const StatsUiStyle DEFAULT_STATS_UI_STYLE = STATS_UI_CLASSIC;
+#define DEFAULT_DUTY_BACKLIGHT_THRESHOLD 70
+#define DEFAULT_DUTY_YELLOW_THRESHOLD 60
+#define DEFAULT_DUTY_RED_THRESHOLD 75
 
 DeviceSettings device_settings = {
     .bl_level = BL_LEVEL_DEFAULT,
@@ -52,6 +55,9 @@ DeviceSettings device_settings = {
     .hbm_mode = HBM_MODE_OFF,
     .led_mode = DEFAULT_LED_MODE,
     .stats_ui_style = DEFAULT_STATS_UI_STYLE,
+    .duty_backlight_threshold = DEFAULT_DUTY_BACKLIGHT_THRESHOLD,
+    .duty_yellow_threshold = DEFAULT_DUTY_YELLOW_THRESHOLD,
+    .duty_red_threshold = DEFAULT_DUTY_RED_THRESHOLD,
 };
 
 CalibrationSettings calibration_settings = {
@@ -733,6 +739,24 @@ esp_err_t settings_init() {
       nvs_read_int("stats_ui_style", &temp_setting_value) == ESP_OK ? (StatsUiStyle)temp_setting_value : DEFAULT_STATS_UI_STYLE;
   if (device_settings.stats_ui_style >= STATS_UI_COUNT) {
     device_settings.stats_ui_style = DEFAULT_STATS_UI_STYLE;
+  }
+
+  device_settings.duty_backlight_threshold =
+      nvs_read_int("duty_bl_thresh", &temp_setting_value) == ESP_OK ? (uint8_t)temp_setting_value : DEFAULT_DUTY_BACKLIGHT_THRESHOLD;
+  if (device_settings.duty_backlight_threshold < 50 || device_settings.duty_backlight_threshold > 100) {
+    device_settings.duty_backlight_threshold = DEFAULT_DUTY_BACKLIGHT_THRESHOLD;
+  }
+
+  device_settings.duty_yellow_threshold =
+      nvs_read_int("duty_yellow_th", &temp_setting_value) == ESP_OK ? (uint8_t)temp_setting_value : DEFAULT_DUTY_YELLOW_THRESHOLD;
+  if (device_settings.duty_yellow_threshold < 30 || device_settings.duty_yellow_threshold > 90) {
+    device_settings.duty_yellow_threshold = DEFAULT_DUTY_YELLOW_THRESHOLD;
+  }
+
+  device_settings.duty_red_threshold =
+      nvs_read_int("duty_red_th", &temp_setting_value) == ESP_OK ? (uint8_t)temp_setting_value : DEFAULT_DUTY_RED_THRESHOLD;
+  if (device_settings.duty_red_threshold < 50 || device_settings.duty_red_threshold > 100) {
+    device_settings.duty_red_threshold = DEFAULT_DUTY_RED_THRESHOLD;
   }
 
   calibration_settings.expo = STICK_EXPO;

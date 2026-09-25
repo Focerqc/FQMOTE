@@ -99,6 +99,7 @@ typedef enum {
   STATS_UI_CLASSIC,
   STATS_UI_COLOR_SHIFT,
   STATS_UI_SOLID_COLOR,
+  STATS_UI_DUTY_BRIGHT,
   STATS_UI_COUNT // Sentinel - keep last
 } StatsUiStyle;
 
@@ -118,6 +119,9 @@ typedef struct {
   HbmModeOptions hbm_mode;
   LedModeOptions led_mode;
   StatsUiStyle stats_ui_style;
+  uint8_t duty_backlight_threshold;
+  uint8_t duty_yellow_threshold;
+  uint8_t duty_red_threshold;
 } DeviceSettings;
 
 // The option list backing a settings dropdown. `labels` is indexed by the

@@ -19,6 +19,9 @@ export component MenuScreen inherits Rectangle {
     in property <bool> hbm-mode-supported: false;
     in property <string> led-mode-label: "";
     in property <bool> led-mode-supported: false;
+    in property <string> backlight-duty-label: "70%";
+    in property <string> yellow-duty-label: "60%";
+    in property <string> red-duty-label: "75%";
     in property <string> shutdown-text: "Shutdown";
     in-out property <int> scroll-offset-y: 0;
     in property <bool> imu-supported: false;
@@ -28,6 +31,9 @@ export component MenuScreen inherits Rectangle {
     callback pocket-mode;
     callback toggle-hbm;
     callback toggle-led;
+    callback toggle-backlight;
+    callback toggle-yellow-duty;
+    callback toggle-red-duty;
     callback settings;
     callback calibration;
     callback pairing;
@@ -120,6 +126,42 @@ export component MenuScreen inherits Rectangle {
                     height: 1px;
                     background: Theme.track;
                 }
+            }
+
+            AppButton {
+                text: "Backlight";
+                right-text: root.backlight-duty-label;
+                variant: "ghost";
+                clicked => { root.toggle-backlight(); }
+            }
+
+            Rectangle {
+                height: 1px;
+                background: Theme.track;
+            }
+
+            AppButton {
+                text: "Yellow Duty";
+                right-text: root.yellow-duty-label;
+                variant: "ghost";
+                clicked => { root.toggle-yellow-duty(); }
+            }
+
+            Rectangle {
+                height: 1px;
+                background: Theme.track;
+            }
+
+            AppButton {
+                text: "Red Duty";
+                right-text: root.red-duty-label;
+                variant: "ghost";
+                clicked => { root.toggle-red-duty(); }
+            }
+
+            Rectangle {
+                height: 1px;
+                background: Theme.track;
             }
 
             AppButton {

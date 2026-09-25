@@ -41,7 +41,7 @@ DEFINE_SETTING_OPTIONS(settings_distance_units_options, DISTANCE_UNITS_LABELS, D
 static const char *const STARTUP_SOUND_LABELS[] = {"Disabled", "Beep", "Melody"};
 DEFINE_SETTING_OPTIONS(settings_startup_sound_options, STARTUP_SOUND_LABELS, STARTUP_SOUND_COUNT)
 
-static const char *const STATS_UI_STYLE_LABELS[] = {"Classic", "Color shift", "Solid duty"};
+static const char *const STATS_UI_STYLE_LABELS[] = {"Classic", "Color shift", "Solid duty", "Duty bright"};
 DEFINE_SETTING_OPTIONS(settings_stats_ui_style_options, STATS_UI_STYLE_LABELS, STATS_UI_COUNT)
 
 static const char *const HBM_LABELS[] = {"Off", "On", "Raised"};
@@ -91,6 +91,9 @@ DEFINE_DEVICE_ACCESSORS(startup_sound, startup_sound, StartupSoundOptions)
 DEFINE_DEVICE_ACCESSORS(stats_dp, double_press_action, StatsDoublePressAction)
 DEFINE_DEVICE_ACCESSORS(led_mode, led_mode, LedModeOptions)
 DEFINE_DEVICE_ACCESSORS(stats_ui_style, stats_ui_style, StatsUiStyle)
+DEFINE_DEVICE_ACCESSORS(duty_backlight_threshold, duty_backlight_threshold, uint8_t)
+DEFINE_DEVICE_ACCESSORS(duty_yellow_threshold, duty_yellow_threshold, uint8_t)
+DEFINE_DEVICE_ACCESSORS(duty_red_threshold, duty_red_threshold, uint8_t)
 
 typedef struct {
   CalibrationSettings calibration;
@@ -277,6 +280,30 @@ static const SettingDescriptor fields[] = {
      .read_number = read_stats_ui_style,
      .apply_number = apply_stats_ui_style,
      .options = settings_stats_ui_style_options},
+    {.key = "duty_bl_thresh",
+     .label = "Duty backlight threshold",
+     .group = "Display",
+     .description = "Duty cycle percentage to trigger backlight raise in duty bright style",
+     .read_number = read_duty_backlight_threshold,
+     .apply_number = apply_duty_backlight_threshold,
+     .minimum = 50,
+     .maximum = 100},
+    {.key = "duty_yellow_th",
+     .label = "Duty yellow threshold",
+     .group = "Display",
+     .description = "Duty cycle percentage where screen tint transitions to yellow",
+     .read_number = read_duty_yellow_threshold,
+     .apply_number = apply_duty_yellow_threshold,
+     .minimum = 30,
+     .maximum = 90},
+    {.key = "duty_red_th",
+     .label = "Duty red threshold",
+     .group = "Display",
+     .description = "Duty cycle percentage where screen tint transitions to red",
+     .read_number = read_duty_red_threshold,
+     .apply_number = apply_duty_red_threshold,
+     .minimum = 50,
+     .maximum = 100},
     {.key = "auto_off_time",
      .label = "Auto-off timeout",
      .group = "Power",

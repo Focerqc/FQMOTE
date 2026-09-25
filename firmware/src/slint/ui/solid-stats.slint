@@ -25,13 +25,16 @@ export component SolidStats inherits Rectangle {
     in property <string> secondary-stat-left-value: "";
     in property <string> secondary-stat-left-label: "";
     in property <int> vehicle-type: 0;
+    in property <float> duty-yellow-threshold: 0.60;
+    in property <float> duty-red-threshold: 0.75;
 
     callback secondary-stat-left-clicked();
     callback board-battery-clicked();
 
-    property <color> text-color: root.duty-fraction > 0.65 ? #ffffff : #000000;
-    property <color> text-dim-color: root.duty-fraction > 0.65 ? #ffffffcc : #00000099;
-    property <color> pill-bg: root.duty-fraction > 0.65 ? rgba(255, 255, 255, 0.20) : rgba(0, 0, 0, 0.15);
+    property <float> shift-cutoff: root.duty-yellow-threshold - 0.05;
+    property <color> text-color: root.duty-fraction > root.shift-cutoff ? #ffffff : #000000;
+    property <color> text-dim-color: root.duty-fraction > root.shift-cutoff ? #ffffffcc : #00000099;
+    property <color> pill-bg: root.duty-fraction > root.shift-cutoff ? rgba(255, 255, 255, 0.20) : rgba(0, 0, 0, 0.15);
 
     VerticalLayout {
         padding-left: 24px * Theme.scale;

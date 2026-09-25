@@ -116,6 +116,18 @@ extern "C" void setup_menu_properties() {
   state.set_led_mode_label(led_mode_label(device_settings.led_mode));
   state.set_led_mode_supported(led_is_supported());
 
+  char bl_duty_buf[16];
+  snprintf(bl_duty_buf, sizeof(bl_duty_buf), "%u%%", device_settings.duty_backlight_threshold);
+  state.set_backlight_duty_label(bl_duty_buf);
+
+  char yellow_duty_buf[16];
+  snprintf(yellow_duty_buf, sizeof(yellow_duty_buf), "%u%%", device_settings.duty_yellow_threshold);
+  state.set_yellow_duty_label(yellow_duty_buf);
+
+  char red_duty_buf[16];
+  snprintf(red_duty_buf, sizeof(red_duty_buf), "%u%%", device_settings.duty_red_threshold);
+  state.set_red_duty_label(red_duty_buf);
+
   stats_register_update_cb(menu_update_display);
   menu_update_display();
 }
@@ -188,6 +200,51 @@ extern "C" void handle_menu_toggle_led() {
 
   // Apply immediately so the new mode is visible while still on the menu
   led_apply_mode();
+
+  setup_menu_properties(); // update the text
+}
+
+extern "C" void handle_menu_toggle_backlight() {
+  uint8_t current = device_settings.duty_backlight_threshold;
+  current += 10;
+  if (current > 100 || current < 50) {
+    current = 50;
+  }
+  device_settings.duty_backlight_threshold = current;
+  ESP_LOGI(TAG, "Duty backlight threshold now %u%%", current);
+  save_device_settings();
+
+  setup_menu_properties(); // update the text
+}
+
+extern "C" void handle_menu_toggle_yellow_duty() {
+  uint8_t current = device_settings.duty_yellow_threshold;
+  current += 5;
+  if (current > 75 || current < 40) {
+    current = 40;
+  }
+  device_settings.duty_yellow_threshold = current;
+  if (device_settings.duty_red_threshold <= current) {
+    device_settings.duty_red_threshold = current + 5;
+  }
+  ESP_LOGI(TAG, "Yellow duty threshold now %u%%", current);
+  save_device_settings();
+
+  setup_menu_properties(); // update the text
+}
+
+extern "C" void handle_menu_toggle_red_duty() {
+  uint8_t current = device_settings.duty_red_threshold;
+  current += 5;
+  if (current > 95 || current < 60) {
+    current = 60;
+  }
+  device_settings.duty_red_threshold = current;
+  if (device_settings.duty_yellow_threshold >= current) {
+    device_settings.duty_yellow_threshold = current - 5;
+  }
+  ESP_LOGI(TAG, "Red duty threshold now %u%%", current);
+  save_device_settings();
 
   setup_menu_properties(); // update the text
 }

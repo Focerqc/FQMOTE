@@ -86,6 +86,12 @@ export global UiState {
     in property <bool> hbm-mode-supported: false;
     in property <string> led-mode-label: "";
     in property <bool> led-mode-supported: false;
+    in property <string> backlight-duty-label: "70%";
+    in property <float> duty-threshold: 0.70;
+    in property <string> yellow-duty-label: "60%";
+    in property <string> red-duty-label: "75%";
+    in property <float> duty-yellow-threshold: 0.60;
+    in property <float> duty-red-threshold: 0.75;
     in property <string> shutdown-text: "Shutdown";
     in-out property <int> scroll-offset-y: 0;
 
@@ -246,6 +252,9 @@ export global UiState {
     callback menu-pocket-mode();
     callback menu-toggle-hbm();
     callback menu-toggle-led();
+    callback menu-toggle-backlight();
+    callback menu-toggle-yellow-duty();
+    callback menu-toggle-red-duty();
     callback menu-shutdown-long-press();
     callback open-settings();
     callback open-input-calibration();
@@ -396,6 +405,9 @@ export component AppWindow inherits Window {
         speed-unit: UiState.speed-unit;
         speed-fraction: UiState.speed-fraction;
         duty-fraction: UiState.duty-fraction;
+        duty-threshold: UiState.duty-threshold;
+        duty-yellow-threshold: UiState.duty-yellow-threshold;
+        duty-red-threshold: UiState.duty-red-threshold;
         left-pad: UiState.left-pad;
         right-pad: UiState.right-pad;
         remote-battery: UiState.remote-battery;
@@ -429,6 +441,9 @@ export component AppWindow inherits Window {
         hbm-mode-supported: UiState.hbm-mode-supported;
         led-mode-label: UiState.led-mode-label;
         led-mode-supported: UiState.led-mode-supported;
+        backlight-duty-label: UiState.backlight-duty-label;
+        yellow-duty-label: UiState.yellow-duty-label;
+        red-duty-label: UiState.red-duty-label;
         shutdown-text: UiState.shutdown-text;
         scroll-offset-y <=> UiState.scroll-offset-y;
         imu-supported: UiState.imu-supported;
@@ -438,6 +453,9 @@ export component AppWindow inherits Window {
         pocket-mode => { UiState.menu-pocket-mode(); }
         toggle-hbm => { UiState.menu-toggle-hbm(); }
         toggle-led => { UiState.menu-toggle-led(); }
+        toggle-backlight => { UiState.menu-toggle-backlight(); }
+        toggle-yellow-duty => { UiState.menu-toggle-yellow-duty(); }
+        toggle-red-duty => { UiState.menu-toggle-red-duty(); }
         settings => { UiState.open-settings(); }
         calibration => { UiState.open-input-calibration(); }
         pairing => { UiState.open-pairing(); }

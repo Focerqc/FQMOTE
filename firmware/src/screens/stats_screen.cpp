@@ -238,6 +238,35 @@ extern "C" void stats_update_screen_display() {
     if (arc_fraction_moved(duty_fraction, &last_duty_fraction)) {
       state.set_duty_fraction(last_duty_fraction);
     }
+    state.set_duty_threshold((float)device_settings.duty_backlight_threshold / 100.0f);
+    state.set_duty_yellow_threshold((float)device_settings.duty_yellow_threshold / 100.0f);
+    state.set_duty_red_threshold((float)device_settings.duty_red_threshold / 100.0f);
+
+    static bool duty_bright_active = false;
+    if (device_settings.stats_ui_style == STATS_UI_DUTY_BRIGHT) {
+      float threshold = (float)device_settings.duty_backlight_threshold / 100.0f;
+      if (duty_fraction >= threshold && !duty_bright_active) {
+        duty_bright_active = true;
+        display_set_bl_level(255);
+        if (display_supports_hbm()) {
+          display_set_hbm(true);
+        }
+      }
+      else if (duty_fraction < (threshold - 0.05f) && duty_bright_active) {
+        duty_bright_active = false;
+        display_set_bl_level(device_settings.bl_level);
+        if (display_supports_hbm() && device_settings.hbm_mode != HBM_MODE_ON) {
+          display_set_hbm(false);
+        }
+      }
+    }
+    else if (duty_bright_active) {
+      duty_bright_active = false;
+      display_set_bl_level(device_settings.bl_level);
+      if (display_supports_hbm() && device_settings.hbm_mode != HBM_MODE_ON) {
+        display_set_hbm(false);
+      }
+    }
     state.set_left_pad(left_pad);
     state.set_right_pad(right_pad);
     state.set_remote_battery(remoteStats.remoteBatteryPercentage);
@@ -343,6 +372,7 @@ extern "C" void teardown_stats_properties() {
   if (device_settings.hbm_mode == HBM_MODE_RAISED) {
     display_set_hbm(false);
   }
+  display_set_bl_level(device_settings.bl_level);
 }
 
 extern "C" void handle_splash_tapped() {

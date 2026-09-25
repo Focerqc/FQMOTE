@@ -9,21 +9,71 @@
   #include "remote/stats.h"
   #include "remote/test_mode.h"
   #include "remote/time.h"
+  #include <math.h>
 
 static const char *TAG = "TEST_MODE";
+
+typedef enum {
+  MOCK_RAMP_UP,
+  MOCK_HANG_HIGH,
+  MOCK_RAMP_DOWN,
+  MOCK_HANG_LOW
+} MockState;
 
 static void test_mode_task(void *pvParameters) {
   vTaskDelay(pdMS_TO_TICKS(5000));
   connection_update_state(CONNECTION_STATE_CONNECTED);
-  float mock_speed = 0.0f;
+
+  MockState state = MOCK_RAMP_UP;
+  float mock_duty = 0.0f;
+  uint32_t hang_counter = 0;
 
   while (1) {
-    mock_speed += 0.2f;
-    if (mock_speed > 40.0f) {
-      mock_speed = 0.0f;
+    switch (state) {
+    case MOCK_RAMP_UP:
+      mock_duty += 0.21f;
+      if (mock_duty >= 90.0f) {
+        mock_duty = 90.0f;
+        state = MOCK_HANG_HIGH;
+        hang_counter = 120; // Hang around 90% for ~1.8 seconds (120 * 15ms)
+      }
+      break;
+
+    case MOCK_HANG_HIGH:
+      // Float naturally around 88.5% - 91.5% duty (~49 - 51 mph)
+      mock_duty = 90.0f + sinf((float)hang_counter * 0.08f) * 1.5f;
+      if (hang_counter > 0) {
+        hang_counter--;
+      }
+      else {
+        state = MOCK_RAMP_DOWN;
+      }
+      break;
+
+    case MOCK_RAMP_DOWN:
+      mock_duty -= 0.21f;
+      if (mock_duty <= 0.0f) {
+        mock_duty = 0.0f;
+        state = MOCK_HANG_LOW;
+        hang_counter = 40; // Brief pause at 0 for ~0.6 seconds
+      }
+      break;
+
+    case MOCK_HANG_LOW:
+      mock_duty = 0.0f;
+      if (hang_counter > 0) {
+        hang_counter--;
+      }
+      else {
+        state = MOCK_RAMP_UP;
+      }
+      break;
     }
-    remoteStats.speed = mock_speed;
-    remoteStats.dutyCycle = (uint8_t)(mock_speed * 2);
+
+    remoteStats.dutyCycle = (uint8_t)roundf(mock_duty);
+    // Ratio so that at ~90% duty, converted speed in MPH is ~48-50 mph:
+    // 50.0 mph / 0.621371 = 80.467 km/h -> 80.467 / 90.0 = 0.894 km/h per % duty
+    remoteStats.speed = mock_duty * 0.894f;
     remoteStats.batteryPercentage = 80;
     remoteStats.batteryVoltage = 74.0f;
     remoteStats.switchState = SWITCH_STATE_BOTH;

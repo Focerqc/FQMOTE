@@ -21,28 +21,34 @@ import { SquareStats } from "square-stats.slint";
 import { SolidStats } from "solid-stats.slint";
 
 export component StatsScreen inherits Rectangle {
-    pure function get-duty-hue(duty: float) -> angle {
-        if (duty <= 0.40) {
+    in property <float> duty-threshold: 0.70;
+    in property <float> duty-yellow-threshold: 0.60;
+    in property <float> duty-red-threshold: 0.75;
+
+    pure function get-duty-hue(duty: float, yellow-thresh: float, red-thresh: float) -> angle {
+        let green-end = max(0.10, yellow-thresh - 0.20);
+        let red-point = max(yellow-thresh + 0.05, red-thresh);
+        if (duty <= green-end) {
             return 135deg;
         }
-        if (duty <= 0.60) {
-            let t = (duty - 0.40) / 0.20;
+        if (duty <= yellow-thresh) {
+            let t = (duty - green-end) / max(0.01, yellow-thresh - green-end);
             return (135.0 - t * 80.0) * 1deg;
         }
-        if (duty <= 0.75) {
-            let t = (duty - 0.60) / 0.15;
+        if (duty <= red-point) {
+            let t = (duty - yellow-thresh) / max(0.01, red-point - yellow-thresh);
             return (55.0 - t * 55.0) * 1deg;
         }
         return 0deg;
     }
 
-    pure function get-duty-color(duty: float) -> color {
-        let h = root.get-duty-hue(duty);
+    pure function get-duty-color(duty: float, yellow-thresh: float, red-thresh: float) -> color {
+        let h = root.get-duty-hue(duty, yellow-thresh, red-thresh);
         return Colors.hsv(h, 0.95, 0.90);
     }
 
     in property <bool> square-mode: Theme.is-square-mode;
-    in property <int> stats-ui-style: 0;        // 0 = Classic, 1 = Color Shift, 2 = Solid Duty
+    in property <int> stats-ui-style: 0;        // 0 = Classic, 1 = Color Shift, 2 = Solid Duty, 3 = Duty Bright
     in property <string> speed: "0.0";
     in property <string> speed-unit: "KPH";
     in property <float> speed-fraction: 0;       // 0..1 of the speed dial
@@ -68,7 +74,7 @@ export component StatsScreen inherits Rectangle {
 
     callback swiped-down;
 
-    background: root.stats-ui-style == 0 ? Theme.bg : get-duty-color(root.duty-fraction);
+    background: root.stats-ui-style == 0 ? Theme.bg : get-duty-color(root.duty-fraction, root.duty-yellow-threshold, root.duty-red-threshold);
 
     // Swipe down detection
     TouchArea {
@@ -98,6 +104,8 @@ export component StatsScreen inherits Rectangle {
     if root.stats-ui-style == 2 : SolidStats {
         width: 100%;
         height: 100%;
+        duty-yellow-threshold: root.duty-yellow-threshold;
+        duty-red-threshold: root.duty-red-threshold;
         speed: root.speed;
         speed-unit: root.speed-unit;
         speed-fraction: root.speed-fraction;
@@ -125,6 +133,9 @@ export component StatsScreen inherits Rectangle {
         width: 100%;
         height: 100%;
         stats-ui-style: root.stats-ui-style;
+        duty-threshold: root.duty-threshold;
+        duty-yellow-threshold: root.duty-yellow-threshold;
+        duty-red-threshold: root.duty-red-threshold;
         speed: root.speed;
         speed-unit: root.speed-unit;
         speed-fraction: root.speed-fraction;
