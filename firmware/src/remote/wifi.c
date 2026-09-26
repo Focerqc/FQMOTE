@@ -141,6 +141,7 @@ esp_err_t wifi_init(void) {
 
   // Small delay to ensure ESP-NOW cleanup is complete
   vTaskDelay(pdMS_TO_TICKS(100));
+  ESP_LOGI(TAG, "wifi_init: delay complete, initializing NVS...");
 
   // Initialize NVS (should already be initialized from ESP-NOW)
   esp_err_t ret = nvs_flash_init();
@@ -153,6 +154,7 @@ esp_err_t wifi_init(void) {
     ret = ESP_OK;
   }
   ESP_ERROR_CHECK(ret);
+  ESP_LOGI(TAG, "wifi_init: NVS ok, creating event group...");
 
   // Create event group for WiFi station
   s_wifi_event_group = xEventGroupCreate();
@@ -161,6 +163,7 @@ esp_err_t wifi_init(void) {
     ret = ESP_ERR_NO_MEM;
     goto fail;
   }
+  ESP_LOGI(TAG, "wifi_init: event group created, creating reconnect timer...");
 
   // Create reconnection timer
   s_reconnect_timer = xTimerCreate("reconnect_timer", pdMS_TO_TICKS(RECONNECT_DELAY_MS),
@@ -171,6 +174,7 @@ esp_err_t wifi_init(void) {
     ret = ESP_ERR_NO_MEM;
     goto fail;
   }
+  ESP_LOGI(TAG, "wifi_init: reconnect timer created, initializing netif...");
 
   // Network interface should already be initialized from ESP-NOW
   esp_err_t netif_ret = esp_netif_init();
@@ -182,6 +186,7 @@ esp_err_t wifi_init(void) {
   if (netif_ret == ESP_ERR_INVALID_STATE) {
     ESP_LOGI(TAG, "Network interface already initialized from ESP-NOW");
   }
+  ESP_LOGI(TAG, "wifi_init: netif init ok, creating event loop...");
 
   // Event loop should already exist from ESP-NOW
   esp_err_t event_loop_ret = esp_event_loop_create_default();
@@ -194,6 +199,7 @@ esp_err_t wifi_init(void) {
   if (event_loop_ret == ESP_ERR_INVALID_STATE) {
     ESP_LOGI(TAG, "Event loop already exists from ESP-NOW");
   }
+  ESP_LOGI(TAG, "wifi_init: event loop ok, creating default wifi sta netif...");
 
   // Create WiFi station network interface
   if (wifi_netif_sta == NULL) {
@@ -204,13 +210,17 @@ esp_err_t wifi_init(void) {
       goto fail;
     }
   }
+  ESP_LOGI(TAG, "wifi_init: default wifi sta netif created: %p, checking wifi driver mode...", wifi_netif_sta);
 
   // Reuse the WiFi driver if retained from ESP-NOW.
   wifi_mode_t existing_mode;
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   esp_err_t wifi_init_ret = esp_wifi_get_mode(&existing_mode);
-  if (wifi_init_ret == ESP_ERR_WIFI_NOT_INIT)
+  ESP_LOGI(TAG, "wifi_init: esp_wifi_get_mode returned %d", wifi_init_ret);
+  if (wifi_init_ret == ESP_ERR_WIFI_NOT_INIT) {
+    ESP_LOGI(TAG, "wifi_init: calling esp_wifi_init...");
     wifi_init_ret = esp_wifi_init(&cfg);
+  }
   if (wifi_init_ret != ESP_OK && wifi_init_ret != ESP_ERR_INVALID_STATE) {
     ESP_LOGE(TAG, "Failed to initialize WiFi: %s (free internal: %u, largest block: %u)",
              esp_err_to_name(wifi_init_ret), heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
@@ -221,6 +231,7 @@ esp_err_t wifi_init(void) {
   if (wifi_init_ret == ESP_ERR_INVALID_STATE) {
     ESP_LOGI(TAG, "WiFi already initialized from ESP-NOW, reconfiguring...");
   }
+  ESP_LOGI(TAG, "wifi_init: registering event handlers...");
 
   // Register event handlers for WiFi station
   ret = esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL, &s_instance_any_id);
@@ -233,6 +244,7 @@ esp_err_t wifi_init(void) {
     ESP_LOGE(TAG, "Failed to register IP event handler: %s", esp_err_to_name(ret));
     goto fail_wifi;
   }
+  ESP_LOGI(TAG, "wifi_init: event handlers registered, setting WiFi mode STA...");
 
   // Set WiFi mode to station (transition from ESP-NOW mode)
   ret = esp_wifi_set_mode(WIFI_MODE_STA);
@@ -240,9 +252,11 @@ esp_err_t wifi_init(void) {
     ESP_LOGE(TAG, "Failed to set WiFi mode: %s", esp_err_to_name(ret));
     goto fail_wifi;
   }
+  ESP_LOGI(TAG, "wifi_init: mode STA set, starting WiFi...");
 
   // WiFi should already be started from ESP-NOW
   esp_err_t wifi_start_ret = esp_wifi_start();
+  ESP_LOGI(TAG, "wifi_init: esp_wifi_start returned %d", wifi_start_ret);
   if (wifi_start_ret != ESP_OK && wifi_start_ret != ESP_ERR_INVALID_STATE) {
     ESP_LOGE(TAG, "Failed to start WiFi: %s (free internal: %u, largest block: %u)", esp_err_to_name(wifi_start_ret),
              heap_caps_get_free_size(MALLOC_CAP_INTERNAL), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
@@ -252,6 +266,7 @@ esp_err_t wifi_init(void) {
   if (wifi_start_ret == ESP_ERR_INVALID_STATE) {
     ESP_LOGI(TAG, "WiFi already started from ESP-NOW, continuing...");
   }
+  ESP_LOGI(TAG, "wifi_init: setting ps and tx power...");
 
   esp_wifi_set_ps(WIFI_PS_NONE); // No power save for ESP-NOW (better performance)
   esp_wifi_set_max_tx_power(52); // ~14 dBm for balanced power and range
@@ -563,4 +578,17 @@ int8_t wifi_get_rssi(void) {
     return 0;
   }
   return ap_info.rssi;
+}
+
+esp_err_t wifi_get_ip_string(char *buf, size_t buf_len) {
+  if (wifi_netif_sta == NULL || buf == NULL || buf_len < 16) {
+    return ESP_FAIL;
+  }
+  esp_netif_ip_info_t ip_info;
+  esp_err_t err = esp_netif_get_ip_info(wifi_netif_sta, &ip_info);
+  if (err != ESP_OK) {
+    return err;
+  }
+  snprintf(buf, buf_len, IPSTR, IP2STR(&ip_info.ip));
+  return ESP_OK;
 }

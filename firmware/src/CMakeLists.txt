@@ -7,7 +7,9 @@ foreach(index RANGE 0 ${slint_last_cpp})
     list(APPEND slint_sources "${CMAKE_BINARY_DIR}/slint_generated/app-window-${index}.cpp")
 endforeach()
 
-idf_component_register(SRCS ${app_sources} ${slint_sources} INCLUDE_DIRS "${CMAKE_BINARY_DIR}")
+idf_component_register(SRCS ${app_sources} ${slint_sources}
+                       INCLUDE_DIRS "${CMAKE_BINARY_DIR}" "."
+                       REQUIRES esp_http_server app_update esp_https_ota)
 # Retain line/function information without enormous generated variable debug
 # tables. Handwritten source files keep their normal debug settings.
 option(SLINT_FULL_DEBUG "Emit full debug information for generated Slint code" OFF)

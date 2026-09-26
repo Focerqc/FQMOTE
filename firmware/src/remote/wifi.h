@@ -159,6 +159,15 @@ extern "C"
    * @return RSSI in dBm, or 0 if not connected
    */
   int8_t wifi_get_rssi(void);
+ 
+  /**
+   * @brief Get local assigned IP address as string
+   *
+   * @param buf Buffer to receive IP string (min 16 bytes)
+   * @param buf_len Size of buffer
+   * @return ESP_OK on success
+   */
+  esp_err_t wifi_get_ip_string(char *buf, size_t buf_len);
 
 #ifdef __cplusplus
 }

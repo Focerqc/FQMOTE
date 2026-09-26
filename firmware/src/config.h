@@ -7,7 +7,7 @@
 #endif
 
 // Uncomment to emulate connection state and incoming stats for UI testing
-#define TEST_MODE 1
+#define TEST_MODE 0
 
 // Log heap and per-task stack use through boot and at runtime. See utilities/mem_debug.h
 #define DEBUG_MEMORY 0

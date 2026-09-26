@@ -5,6 +5,7 @@
 #include "esp_sleep.h"
 #include "esp_system.h"
 #include "esp_task_wdt.h"
+#include "esp_netif.h"
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -74,6 +75,7 @@ void app_main(void) {
   // Core setup
   init_i2c();
   settings_init();
+  esp_netif_init();
   init_adcs();
   buttons_init();
   buzzer_init();

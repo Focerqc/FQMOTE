@@ -8,6 +8,7 @@
 #include "esp_system.h"
 #include "esp_task_wdt.h"
 #include "esp_timer.h"
+#include "ota/local_ota.h"
 #include "ota/update_client.h"
 #include "remote/comms.h"
 #include "remote/connection.h"
@@ -34,6 +35,7 @@ enum UpdateStep {
   UPDATE_STEP_CHECKING_UPDATE,
   UPDATE_STEP_UPDATE_AVAILABLE,
   UPDATE_STEP_NO_UPDATE,
+  UPDATE_STEP_WAITING_LOCAL_OTA,
   UPDATE_STEP_IN_PROGRESS,
   UPDATE_STEP_COMPLETE,
   UPDATE_STEP_NO_WIFI,
@@ -96,6 +98,14 @@ static void update_status_ui() {
     primary_btn_enabled = true;
     break;
   }
+  case UPDATE_STEP_WAITING_LOCAL_OTA: {
+    char ip_str[32] = {0};
+    wifi_get_ip_string(ip_str, sizeof(ip_str));
+    snprintf(body_text, sizeof(body_text), "Wi-Fi Connected!\nIP: %s\n\nReady for OTA upload\nhttp://%s", ip_str, ip_str);
+    primary_btn_text = "Exit";
+    primary_btn_enabled = true;
+    break;
+  }
   case UPDATE_STEP_NO_UPDATE:
     snprintf(body_text, sizeof(body_text), "No updates available");
     primary_btn_text = "Exit";
@@ -143,6 +153,40 @@ static void update_status_ui() {
         model->push_back(available_updates[i].name);
       }
       state.set_updates(model);
+    }
+  });
+}
+
+static void local_progress_cb(int percent, int received_bytes, int total_bytes) {
+  current_update_step = UPDATE_STEP_IN_PROGRESS;
+  char buf[128];
+  snprintf(buf, sizeof(buf), "Flashing OTA...\n%d%%\n%d / %d KB", percent, received_bytes / 1024, total_bytes / 1024);
+  slint::SharedString body(buf);
+  slint::invoke_from_event_loop([=]() {
+    if (!get_slint_window())
+      return;
+    const auto &state = get_slint_window()->global<UiState>();
+    state.set_update_body(body);
+    state.set_update_primary_enabled(false);
+  });
+}
+
+static void local_status_cb(const char *status) {
+  if (strstr(status, "Complete") != NULL) {
+    current_update_step = UPDATE_STEP_COMPLETE;
+  }
+  else if (strstr(status, "failed") != NULL || strstr(status, "interrupted") != NULL) {
+    current_update_step = UPDATE_STEP_ERROR;
+  }
+  slint::SharedString body(status);
+  slint::invoke_from_event_loop([=]() {
+    if (!get_slint_window())
+      return;
+    const auto &state = get_slint_window()->global<UiState>();
+    state.set_update_body(body);
+    if (current_update_step == UPDATE_STEP_COMPLETE) {
+      state.set_update_primary_text("Reboot");
+      state.set_update_primary_enabled(false);
     }
   });
 }
@@ -228,10 +272,20 @@ static void update_task(void *pvParameters) {
       else {
         ESP_LOGI(TAG, "WiFi Connected. RSSI: %d dBm", wifi_get_rssi());
         last_rssi_log_time = esp_timer_get_time();
-        current_update_step = UPDATE_STEP_CHECKING_UPDATE;
+        char ip_str[32] = {0};
+        wifi_get_ip_string(ip_str, sizeof(ip_str));
+        ESP_LOGI(TAG, "Device IP: %s", ip_str);
+
+        // Start Local OTA HTTP server
+        local_ota_start(local_progress_cb, local_status_cb);
+
+        current_update_step = UPDATE_STEP_WAITING_LOCAL_OTA;
       }
       break;
     }
+    case UPDATE_STEP_WAITING_LOCAL_OTA:
+      // Waiting for OTA upload or user exit
+      break;
     case UPDATE_STEP_CHECKING_UPDATE: {
       const char *asset_name = HW_TYPE;
       // Keep the 1.6KB release response off the stack used by HTTPS/TLS.
@@ -325,6 +379,11 @@ static void update_task(void *pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 
+  // Cleanup Local OTA
+  if (local_ota_is_running()) {
+    local_ota_stop();
+  }
+
   // Cleanup Wi-Fi / ESP-NOW
   if (wifi_is_initialized()) {
     wifi_uninit();
@@ -412,10 +471,16 @@ extern "C" void handle_update_primary() {
     ESP_LOGI(TAG, "Transitioning from UPDATE_STEP_START to UPDATE_STEP_CONNECTING");
     current_update_step = UPDATE_STEP_CONNECTING;
     break;
+  case UPDATE_STEP_CONNECTING:
+  case UPDATE_STEP_CHECKING_UPDATE:
+  case UPDATE_STEP_IN_PROGRESS:
+    ESP_LOGI(TAG, "Already in progress (step %d), ignoring extra press", current_update_step);
+    break;
   case UPDATE_STEP_UPDATE_AVAILABLE:
     ESP_LOGI(TAG, "Transitioning to UPDATE_STEP_IN_PROGRESS");
     current_update_step = UPDATE_STEP_IN_PROGRESS;
     break;
+  case UPDATE_STEP_WAITING_LOCAL_OTA:
   case UPDATE_STEP_NO_UPDATE:
   case UPDATE_STEP_NO_WIFI:
   case UPDATE_STEP_STARTUP_ERROR:
@@ -430,8 +495,7 @@ extern "C" void handle_update_primary() {
     current_update_step = UPDATE_STEP_START;
     break;
   default:
-    ESP_LOGI(TAG, "Default fallback to UPDATE_STEP_START");
-    current_update_step = UPDATE_STEP_START;
+    ESP_LOGI(TAG, "Default fallback, ignoring step %d", current_update_step);
     break;
   }
 }
