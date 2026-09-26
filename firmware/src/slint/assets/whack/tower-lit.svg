@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="84" height="205" viewBox="0 0 84 205">
+<g fill="#fff">
+  <rect x="41.3" y="0" width="1.4" height="16.4"/>
+  <rect x="35.3" y="15.4" width="13.4" height="2.4"/>
+  <rect x="38.6" y="16.4" width="6.7" height="1.6"/><rect x="38.6" y="29" width="6.9" height="1.6"/><rect x="38.3" y="41.5" width="7.5" height="1.6"/><rect x="37.7" y="54.1" width="8.6" height="1.6"/><rect x="36.8" y="66.7" width="10.4" height="1.6"/><rect x="35.6" y="79.3" width="12.9" height="1.6"/><rect x="33.9" y="91.8" width="16.1" height="1.6"/><rect x="31.9" y="104.4" width="20.1" height="1.6"/><rect x="29.5" y="117" width="24.9" height="1.6"/><rect x="26.7" y="129.6" width="30.6" height="1.6"/><rect x="23.4" y="142.1" width="37.1" height="1.6"/><rect x="19.7" y="154.7" width="44.6" height="1.6"/><rect x="15.5" y="167.3" width="19.6" height="1.6"/><rect x="48.9" y="167.3" width="19.6" height="1.6"/><rect x="10.8" y="179.9" width="17.9" height="1.6"/><rect x="55.3" y="179.9" width="17.9" height="1.6"/><rect x="5.7" y="192.4" width="16.6" height="1.6"/><rect x="61.8" y="192.4" width="16.6" height="1.6"/>
+  <rect x="26" y="90.2" width="31.9" height="3.4" rx="1"/>
+  <rect x="12.6" y="139.4" width="58.8" height="4.4" rx="1"/>
+  <circle cx="41.2" cy="32.8" r="1.4"/><circle cx="39.5" cy="55.4" r="1.4"/><circle cx="43.7" cy="73.8" r="1.4"/><circle cx="33.6" cy="106.6" r="1.4"/><circle cx="48.7" cy="123" r="1.4"/><circle cx="25.2" cy="159.9" r="1.4"/><circle cx="58.8" cy="172.2" r="1.4"/><circle cx="13.4" cy="192.7" r="1.4"/><circle cx="70.6" cy="188.6" r="1.4"/><circle cx="42" cy="149.7" r="1.4"/>
+</g>
+<path d="M15.1 205 L15.1 205 L17 201.9 L18.8 198.7 L20.5 195.6 L22.2 192.4 L23.9 189.3 L25.5 186.1 L27.1 183 L28.7 179.9 L30.3 176.7 L31.8 173.6 L33.4 170.4 L35.1 167.3 L36.9 164.1 L39.4 161 44.6 161 L47.1 164.1 L48.9 167.3 L50.6 170.4 L52.2 173.6 L53.7 176.7 L55.3 179.9 L56.9 183 L58.5 186.1 L60.1 189.3 L61.8 192.4 L63.5 195.6 L65.2 198.7 L67 201.9 L68.9 205 L68.9 205" fill="none" stroke="#fff" stroke-width="1.6"/>
+</svg>

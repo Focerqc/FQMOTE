@@ -1,10 +1,11 @@
 #include "screens/games_screen.h"
 #include "esp_log.h"
-#include "generated/app-window.h"
 #include "remote/display.h"
 #include "remote/haptic.h"
 #include "screens/flappy_screen.h"
 #include "screens/tetris_screen.h"
+#include "screens/whack_screen.h"
+#include "slint_generated/app-window.h"
 #include <stdio.h>
 
 static const char *TAG = "PUBREMOTE-GAMES_SCREEN";
@@ -31,6 +32,10 @@ extern "C" void handle_games_flappy() {
   go_to(Screen::Flappy);
 }
 
+extern "C" void handle_games_whack() {
+  go_to(Screen::Whack);
+}
+
 extern "C" void handle_games_back() {
   go_to(Screen::About);
 }
@@ -47,4 +52,6 @@ extern "C" void setup_games_properties() {
   state.set_tetris_best(slint::SharedString(buf));
   snprintf(buf, sizeof(buf), "%lu", (unsigned long)flappy_high_score());
   state.set_flappy_best(slint::SharedString(buf));
+  snprintf(buf, sizeof(buf), "%lu", (unsigned long)whack_high_score());
+  state.set_whack_best(slint::SharedString(buf));
 }

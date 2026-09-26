@@ -28,8 +28,6 @@ jobs:
       # Check out the PR branch
       - name: Checkout PR branch
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - uses: actions/cache@v4
         with:
@@ -60,8 +58,6 @@ jobs:
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Check out ESP-IDF test dependencies
         uses: actions/checkout@v4
