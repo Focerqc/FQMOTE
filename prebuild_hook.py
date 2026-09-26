@@ -10,6 +10,12 @@ import sys
 import tempfile
 
 
+git_cmd_path = r"C:\Program Files\Git\cmd"
+if os.path.exists(git_cmd_path):
+    os.environ["PATH"] = git_cmd_path + os.pathsep + os.environ.get("PATH", "")
+    if "ENV" in env:
+        env["ENV"]["PATH"] = git_cmd_path + os.pathsep + env["ENV"].get("PATH", "")
+
 def write_if_changed(path, content):
     """Keep timestamps stable when generation produces identical bytes."""
     path = Path(path)
@@ -32,10 +38,13 @@ generated_dir.mkdir(parents=True, exist_ok=True)
 # Only metadata consumers rebuild when the date or firmware version changes.
 version = env.GetProjectOption("custom_firmware_version")
 major, minor, patch = version.split(".")
-build_id = hashlib.md5(f"{env['PIOENV']}_{version}_{datetime.now():%Y%m%d}".encode()).hexdigest()[:8]
+hw_type = env['PIOENV']
+if hw_type.endswith('_ota'):
+    hw_type = hw_type[:-4]
+build_id = hashlib.md5(f"{hw_type}_{version}_{datetime.now():%Y%m%d}".encode()).hexdigest()[:8]
 metadata = (
     '#pragma once\n'
-    f'#define HW_TYPE "{env["PIOENV"]}"\n'
+    f'#define HW_TYPE "{hw_type}"\n'
     f'#define BUILD_ID "{build_id}"\n'
     f'#define VERSION_MAJOR {major}\n'
     f'#define VERSION_MINOR {minor}\n'

@@ -150,6 +150,7 @@ static int coredump_info_command() {
     printf("Failed to allocate memory for core dump summary\n");
     return -1;
   }
+#if CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH && CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF
   esp_err_t err = esp_core_dump_get_summary(summary);
   if (err == ESP_OK) {
     printf("coredump: found\n");
@@ -157,6 +158,9 @@ static int coredump_info_command() {
   else {
     printf("coredump: none\n");
   }
+#else
+  printf("coredump: found (summary disabled in menuconfig)\n");
+#endif
   free(summary);
   return 0;
 }
@@ -182,6 +186,7 @@ static int coredump_print_command() {
     printf("Failed to allocate memory for core dump summary\n");
     return -1;
   }
+#if CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH && CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF
   esp_err_t err = esp_core_dump_get_summary(summary);
   if (err == ESP_OK) {
     printf("coredump_task: %s\n", summary->exc_task);
@@ -195,6 +200,9 @@ static int coredump_print_command() {
   else {
     printf("No core dump found or failed to parse (err=%d)\n", err);
   }
+#else
+  printf("Core dump summary is disabled in menuconfig (CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF).\n");
+#endif
   free(summary);
   return 0;
 }
