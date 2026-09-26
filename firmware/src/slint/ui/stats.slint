@@ -47,11 +47,30 @@ export component StatsScreen inherits Rectangle {
         return Colors.hsv(h, 0.95, 0.90);
     }
 
+    pure function get-dark-shift-color(duty: float, yellow-thresh: float, red-thresh: float) -> color {
+        let glow-start = max(0.0, yellow-thresh - 0.10);
+        if (duty <= glow-start) {
+            return #000000;
+        }
+        if (duty <= yellow-thresh) {
+            let t = (duty - glow-start) / max(0.01, yellow-thresh - glow-start);
+            return Colors.hsv(55deg, 0.95, t * 0.90);
+        }
+        let red-point = max(yellow-thresh + 0.05, red-thresh);
+        if (duty <= red-point) {
+            let t = (duty - yellow-thresh) / max(0.01, red-point - yellow-thresh);
+            return Colors.hsv((55.0 - t * 55.0) * 1deg, 0.95, 0.90);
+        }
+        return Colors.hsv(0deg, 0.95, 0.90);
+    }
+
     in property <bool> square-mode: Theme.is-square-mode;
-    in property <int> stats-ui-style: 0;        // 0 = Classic, 1 = Color Shift, 2 = Solid Duty, 3 = Duty Bright
+    in property <int> stats-ui-style: 0;        // 0 = Classic, 1 = Color Shift, 2 = Solid Duty, 3 = Duty Bright, 4 = Dark Shift, 5 = Duty Ring A, 6 = Duty Ring B, 7 = Duty Ring C, 8 = Duty Ring D
     in property <string> speed: "0.0";
     in property <string> speed-unit: "KPH";
     in property <float> speed-fraction: 0;       // 0..1 of the speed dial
+    in property <float> raw-speed: 0;
+    in property <float> spin-angle: 0;
     in property <float> duty-fraction: 0;        // 0..1 of the utilization dial
     in property <bool> left-pad: false;
     in property <bool> right-pad: false;
@@ -74,7 +93,9 @@ export component StatsScreen inherits Rectangle {
 
     callback swiped-down;
 
-    background: root.stats-ui-style == 0 ? Theme.bg : get-duty-color(root.duty-fraction, root.duty-yellow-threshold, root.duty-red-threshold);
+    background: root.stats-ui-style == 0 || root.stats-ui-style == 5 || root.stats-ui-style == 6 || root.stats-ui-style == 7 || root.stats-ui-style == 8 ? Theme.bg :
+                root.stats-ui-style == 4 ? root.get-dark-shift-color(root.duty-fraction, root.duty-yellow-threshold, root.duty-red-threshold) :
+                root.get-duty-color(root.duty-fraction, root.duty-yellow-threshold, root.duty-red-threshold);
 
     // Swipe down detection
     TouchArea {
@@ -139,6 +160,8 @@ export component StatsScreen inherits Rectangle {
         speed: root.speed;
         speed-unit: root.speed-unit;
         speed-fraction: root.speed-fraction;
+        raw-speed: root.raw-speed;
+        spin-angle: root.spin-angle;
         duty-fraction: root.duty-fraction;
         left-pad: root.left-pad;
         right-pad: root.right-pad;

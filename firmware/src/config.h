@@ -138,3 +138,9 @@
 #ifndef IMU_SWAP_XY
   #define IMU_SWAP_XY 0
 #endif
+
+// Optional private local Wi-Fi credentials (ignored by git in wifi_credentials.h)
+#if __has_include("wifi_credentials.h")
+  #include "wifi_credentials.h"
+#endif
+

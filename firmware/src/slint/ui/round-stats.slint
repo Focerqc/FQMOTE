@@ -31,21 +31,109 @@ export component RoundStats inherits Rectangle {
     in property <float> duty-threshold: 0.70;
     in property <float> duty-yellow-threshold: 0.60;
     in property <float> duty-red-threshold: 0.75;
+    in property <float> raw-speed: 0;
+    in property <float> spin-angle: 0;
 
     callback secondary-stat-left-clicked();
     callback board-battery-clicked();
 
+    pure function get-duty-hue(duty: float, yellow-thresh: float, red-thresh: float) -> angle {
+        let green-end = max(0.10, yellow-thresh - 0.20);
+        let red-point = max(yellow-thresh + 0.05, red-thresh);
+        if (duty <= green-end) {
+            return 135deg;
+        }
+        if (duty <= yellow-thresh) {
+            let t = (duty - green-end) / max(0.01, yellow-thresh - green-end);
+            return (135.0 - t * 80.0) * 1deg;
+        }
+        if (duty <= red-point) {
+            let t = (duty - yellow-thresh) / max(0.01, red-point - yellow-thresh);
+            return (55.0 - t * 55.0) * 1deg;
+        }
+        return 0deg;
+    }
+
+    pure function get-duty-color(duty: float, yellow-thresh: float, red-thresh: float) -> color {
+        let h = root.get-duty-hue(duty, yellow-thresh, red-thresh);
+        return Colors.hsv(h, 0.95, 0.90);
+    }
+
     property <bool> is-shifted: root.stats-ui-style == 1 || root.stats-ui-style == 3;
+    property <bool> is-dark-shifted: root.stats-ui-style == 4;
     property <float> shift-cutoff: root.duty-yellow-threshold - 0.05;
-    property <color> text-color: !root.is-shifted ? Theme.text : (root.duty-fraction > root.shift-cutoff ? #ffffff : #000000);
-    property <color> text-dim-color: !root.is-shifted ? Theme.text-dim : (root.duty-fraction > root.shift-cutoff ? #ffffffb0 : #00000088);
-    property <color> track-color: !root.is-shifted ? Theme.track : (root.duty-fraction > root.shift-cutoff ? rgba(255, 255, 255, 0.25) : rgba(0, 0, 0, 0.20));
-    property <brush> speed-indicator-color: !root.is-shifted ? Theme.accent : (root.duty-fraction > root.shift-cutoff ? #ffffff : #000000);
+
+    property <color> text-color: root.is-shifted ? (root.duty-fraction > root.shift-cutoff ? #ffffff : #000000) : Theme.text;
+    property <color> text-dim-color: root.is-shifted ? (root.duty-fraction > root.shift-cutoff ? #ffffffb0 : #00000088) :
+                                     root.is-dark-shifted && root.duty-fraction > root.shift-cutoff ? #ffffffb0 : Theme.text-dim;
+    property <color> track-color: root.is-shifted ? (root.duty-fraction > root.shift-cutoff ? rgba(255, 255, 255, 0.25) : rgba(0, 0, 0, 0.20)) :
+                                  root.is-dark-shifted && root.duty-fraction > root.shift-cutoff ? rgba(255, 255, 255, 0.25) : Theme.track;
+    property <brush> speed-indicator-color: root.is-shifted ? (root.duty-fraction > root.shift-cutoff ? #ffffff : #000000) :
+                                            root.is-dark-shifted && root.duty-fraction > root.shift-cutoff ? #ffffff :
+                                            (root.stats-ui-style == 8 && root.show-edge-d && root.edge-d-color != transparent) ? root.edge-d-color :
+                                            Theme.accent;
 
     property <brush> duty-color: root.duty-fraction >= root.duty-red-threshold ? Theme.color-critical :
         root.duty-fraction >= root.duty-yellow-threshold ? Theme.color-warning :
         root.duty-fraction >= (root.duty-yellow-threshold - 0.10) ? Theme.color-caution :
         Theme.color-active;
+
+    property <color> duty-ring-color: root.get-duty-color(root.duty-fraction, root.duty-yellow-threshold, root.duty-red-threshold);
+
+    // Inner diameter (ID) remains strictly fixed around the MPH readout!
+    property <length> ring-id: 108px * Theme.scale;
+    // Outer diameter max reaches near the outer speed dial
+    property <length> ring-od-max: root.width - (36px * Theme.scale);
+    // Base thickness when the ring first appears at minimal duty
+    property <length> ring-base-thickness: 6px * Theme.scale;
+    property <length> ring-od-min: root.ring-id + (root.ring-base-thickness * 2);
+    // The OD expands outward from ring-od-min to ring-od-max with duty fraction!
+    property <length> ring-od: root.ring-od-min + (root.ring-od-max - root.ring-od-min) * Math.min(1.0, Math.max(0.0, root.duty-fraction));
+    // The border width exactly spans from ID to OD, filling the colored area while keeping ID locked!
+    property <length> ring-border-width: (root.ring-od - root.ring-id) / 2;
+
+    // Duty Ring A (concentric layered expanding rings: Black base -> Green above 10mph -> Yellow overtop -> Red overtop)
+    property <bool> speed-active-a: root.raw-speed >= (root.speed-unit == "MPH" ? 10.0 : 16.0);
+    property <float> yellow-start: Math.max(0.10, root.duty-yellow-threshold - 0.15);
+    property <float> green-progress: Math.min(1.0, Math.max(0.0, root.duty-fraction / root.yellow-start));
+    property <length> green-od: root.speed-active-a ? (root.ring-od-min + (root.ring-od-max - root.ring-od-min) * root.green-progress) : root.ring-id;
+    property <length> green-border-width: (root.green-od - root.ring-id) / 2;
+    property <bool> show-green: root.green-od > root.ring-id;
+
+    property <float> yellow-progress: root.duty-fraction <= root.yellow-start ? 0.0 :
+                                      Math.min(1.0, (root.duty-fraction - root.yellow-start) / Math.max(0.01, root.duty-yellow-threshold - root.yellow-start));
+    property <length> yellow-od: root.yellow-progress > 0.0 ? (root.ring-id + (root.ring-od-max - root.ring-id) * root.yellow-progress) : root.ring-id;
+    property <length> yellow-border-width: (root.yellow-od - root.ring-id) / 2;
+    property <bool> show-yellow: root.yellow-od > root.ring-id;
+
+    property <float> red-progress: root.duty-fraction <= root.duty-yellow-threshold ? 0.0 :
+                                   Math.min(1.0, (root.duty-fraction - root.duty-yellow-threshold) / Math.max(0.01, root.duty-red-threshold - root.duty-yellow-threshold));
+    property <length> red-od: root.red-progress > 0.0 ? (root.ring-id + (root.ring-od-max - root.ring-id) * root.red-progress) : root.ring-id;
+    property <length> red-border-width: (root.red-od - root.ring-id) / 2;
+    property <bool> show-red: root.red-od > root.ring-id;
+
+    property <color> active-inner-color: root.show-red ? #ff3b30 :
+                                         root.show-yellow ? #ffd600 :
+                                         root.show-green ? #00d159 : transparent;
+
+    // Duty Ring C (Solid concentric filled discs without center hole, solid color underneath MPH)
+    property <length> green-od-c: root.speed-active-a ? (root.ring-id + (root.ring-od-max - root.ring-id) * root.green-progress) : 0px;
+    property <bool> show-green-c: root.green-od-c > 0px;
+
+    property <length> yellow-od-c: root.yellow-progress > 0.0 ? (root.ring-od-max * root.yellow-progress) : 0px;
+    property <bool> show-yellow-c: root.yellow-od-c > 0px;
+
+    property <length> red-od-c: root.red-progress > 0.0 ? (root.ring-od-max * root.red-progress) : 0px;
+    property <bool> show-red-c: root.red-od-c > 0px;
+
+    // Duty Ring D (Edge Glow: vibrant halo glowing inward from the screen perimeter)
+    property <bool> show-edge-d: root.speed-active-a || root.duty-fraction >= root.yellow-start;
+    property <color> edge-d-color: root.show-red ? #ff3b30 :
+                                   root.show-yellow ? #ffd600 :
+                                   root.show-green ? #00d159 : transparent;
+
+    // Style B (Aura): appears right away when you start moving (> 0.5 mph/kph) or when duty is active
+    property <bool> show-ring-b: Math.abs(root.raw-speed) >= 0.5 || root.duty-fraction >= 0.05;
 
     property <bool> was-long-pressed: false;
 
@@ -64,8 +152,8 @@ export component RoundStats inherits Rectangle {
         value: root.speed-fraction;
     }
 
-    // ui_UtilizationDial
-    ArcGauge {
+    // ui_UtilizationDial (hidden in Ring A, B, C & D styles so the duty warning visuals are the focal point)
+    if root.stats-ui-style != 5 && root.stats-ui-style != 6 && root.stats-ui-style != 7 && root.stats-ui-style != 8 : ArcGauge {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
         width: parent.width - (34px * Theme.scale);
@@ -77,6 +165,183 @@ export component RoundStats inherits Rectangle {
         indicator-color: root.duty-color;
         reverse: true;
         value: root.duty-fraction;
+    }
+
+    // --- Duty Rings around MPH (centered on screen, behind content overlay) ---
+    // Style 5: Duty Ring A (Layered Concentric Rings: Green base -> Yellow overtop -> Red overtop)
+    // 1. Green layer (appears at 10mph, expands outward with duty)
+    if root.stats-ui-style == 5 && root.show-green : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.green-od;
+        height: root.green-od;
+        border-radius: self.width / 2;
+        border-width: root.green-border-width;
+        border-color: #00d159;
+        background: transparent;
+    }
+
+    // 2. Yellow layer (expands from inner hole outward overtop green)
+    if root.stats-ui-style == 5 && root.show-yellow : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.yellow-od;
+        height: root.yellow-od;
+        border-radius: self.width / 2;
+        border-width: root.yellow-border-width;
+        border-color: #ffd600;
+        background: transparent;
+    }
+
+    // 3. Red layer (expands from inner hole outward overtop yellow)
+    if root.stats-ui-style == 5 && root.show-red : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.red-od;
+        height: root.red-od;
+        border-radius: self.width / 2;
+        border-width: root.red-border-width;
+        border-color: #ff3b30;
+        background: transparent;
+    }
+
+    // 4. Crisp inner rim at the fixed ID
+    if root.stats-ui-style == 5 && root.active-inner-color != transparent : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.ring-id;
+        height: root.ring-id;
+        border-radius: self.width / 2;
+        border-width: 2px * Theme.scale;
+        border-color: root.active-inner-color;
+        background: transparent;
+    }
+
+    // Style 6: Duty Ring B (Aura: expanding duty color band with glowing outer halo)
+    if root.stats-ui-style == 6 && root.show-ring-b : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.ring-od;
+        height: root.ring-od;
+        border-radius: self.width / 2;
+        border-width: root.ring-border-width;
+        border-color: root.duty-fraction < (root.duty-yellow-threshold - 0.05) ?
+                      root.duty-ring-color.with-alpha(0.65) :
+                      root.duty-ring-color;
+        background: transparent;
+
+        // Glowing outer halo edge
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            width: parent.width + 6px * Theme.scale;
+            height: parent.height + 6px * Theme.scale;
+            border-radius: self.width / 2;
+            border-width: 3px * Theme.scale;
+            border-color: root.duty-ring-color.with-alpha(0.25);
+            background: transparent;
+        }
+    }
+
+    // Style 6: Duty Ring B (Spinning rainbow ring at fixed ID when moving)
+    if root.stats-ui-style == 6 && root.show-ring-b : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.ring-id + 4px * Theme.scale;
+        height: root.ring-id + 4px * Theme.scale;
+        background: transparent;
+
+        for col[i] in [#ff3b30, #ff9500, #ffcc00, #34c759, #007aff, #af52de]: ArcGauge {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            width: parent.width;
+            height: parent.height;
+            thickness: 5px * Theme.scale;
+            show-track: false;
+            value: 1.0;
+            start-angle: root.spin-angle * 1deg + (i * 60deg);
+            span-angle: 61deg;
+            indicator-color: col;
+        }
+    }
+
+    // --- Style 7: Duty Ring C (Solid concentric filled discs, no center hole) ---
+    // 1. Green filled disc (appears at 10mph, expands with duty)
+    if root.stats-ui-style == 7 && root.show-green-c : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.green-od-c;
+        height: root.green-od-c;
+        border-radius: self.width / 2;
+        background: #00d159;
+    }
+
+    // 2. Yellow filled disc (expands from center overtop green)
+    if root.stats-ui-style == 7 && root.show-yellow-c : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.yellow-od-c;
+        height: root.yellow-od-c;
+        border-radius: self.width / 2;
+        background: #ffd600;
+    }
+
+    // 3. Red filled disc (expands from center overtop yellow)
+    if root.stats-ui-style == 7 && root.show-red-c : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.red-od-c;
+        height: root.red-od-c;
+        border-radius: self.width / 2;
+        background: #ff3b30;
+    }
+
+    // --- Style 8: Duty Ring D (Edge Glow: perimeter halo radiating inward) ---
+    if root.stats-ui-style == 8 && root.show-edge-d && root.edge-d-color != transparent : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: parent.width;
+        height: parent.height;
+        border-radius: self.width / 2;
+        border-width: 4px * Theme.scale;
+        border-color: root.edge-d-color;
+        background: transparent;
+
+        // Glow layer 1 (inward bleed)
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            width: parent.width - (4px * Theme.scale);
+            height: parent.height - (4px * Theme.scale);
+            border-radius: self.width / 2;
+            border-width: 6px * Theme.scale;
+            border-color: root.edge-d-color.with-alpha(0.55);
+            background: transparent;
+        }
+
+        // Glow layer 2 (soft ambient halo)
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            width: parent.width - (12px * Theme.scale);
+            height: parent.height - (12px * Theme.scale);
+            border-radius: self.width / 2;
+            border-width: 10px * Theme.scale;
+            border-color: root.edge-d-color.with-alpha(0.25);
+            background: transparent;
+        }
+
+        // Glow layer 3 (deep peripheral aura)
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            width: parent.width - (24px * Theme.scale);
+            height: parent.height - (24px * Theme.scale);
+            border-radius: self.width / 2;
+            border-width: 14px * Theme.scale;
+            border-color: root.edge-d-color.with-alpha(0.10);
+            background: transparent;
+        }
     }
 
     // --- Content overlay (ui_StatsContent) ---
@@ -116,28 +381,40 @@ export component RoundStats inherits Rectangle {
         }
 
         // ui_StatsBody (50%)
-            VerticalLayout {
+        VerticalLayout {
             width: 100%;
             alignment: center;
+            spacing: 6px * Theme.scale;
 
             // ui_PrimaryStat + ui_PrimaryStatUnit
-                SpeedDisplay {
+            SpeedDisplay {
                 speed: root.speed;
                 speed-unit: root.speed-unit;
                 text-color: root.text-color;
                 unit-color: root.text-dim-color;
+                show-outline: root.stats-ui-style == 7;
+                font-size: Theme.font-48;
             }
 
             HorizontalLayout {
                 alignment: center;
-                SecondaryStat {
-                    variant: "full";
-                    is-connected: root.is-connected;
-                    left-value: root.secondary-stat-left-value;
-                    left-label: root.secondary-stat-left-label;
-                    right-value: root.board-battery;
-                    left-clicked => { root.secondary-stat-left-clicked() }
-                    right-clicked => { root.board-battery-clicked() }
+                Rectangle {
+                    width: stat-content.preferred-width + 16px * Theme.scale;
+                    height: stat-content.preferred-height + 6px * Theme.scale;
+                    background: root.stats-ui-style == 7 && (root.show-green-c || root.show-yellow-c || root.show-red-c) ?
+                                rgba(0, 0, 0, 0.45) : transparent;
+                    border-radius: 8px * Theme.scale;
+                    stat-content := SecondaryStat {
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        variant: "full";
+                        is-connected: root.is-connected;
+                        left-value: root.secondary-stat-left-value;
+                        left-label: root.secondary-stat-left-label;
+                        right-value: root.board-battery;
+                        left-clicked => { root.secondary-stat-left-clicked() }
+                        right-clicked => { root.board-battery-clicked() }
+                    }
                 }
             }
         }

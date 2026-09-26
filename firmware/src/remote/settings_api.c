@@ -41,7 +41,8 @@ DEFINE_SETTING_OPTIONS(settings_distance_units_options, DISTANCE_UNITS_LABELS, D
 static const char *const STARTUP_SOUND_LABELS[] = {"Disabled", "Beep", "Melody"};
 DEFINE_SETTING_OPTIONS(settings_startup_sound_options, STARTUP_SOUND_LABELS, STARTUP_SOUND_COUNT)
 
-static const char *const STATS_UI_STYLE_LABELS[] = {"Classic", "Color shift", "Solid duty", "Duty bright"};
+static const char *const STATS_UI_STYLE_LABELS[] = {
+    "Classic", "Color shift", "Solid duty", "Duty bright", "Dark shift", "Duty ring A", "Duty ring B", "Duty ring C", "Duty ring D"};
 DEFINE_SETTING_OPTIONS(settings_stats_ui_style_options, STATS_UI_STYLE_LABELS, STATS_UI_COUNT)
 
 static const char *const HBM_LABELS[] = {"Off", "On", "Raised"};

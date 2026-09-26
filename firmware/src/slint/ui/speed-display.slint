@@ -7,12 +7,35 @@ export component SpeedDisplay inherits Rectangle {
     in property <length> font-size: Theme.font-64;
     in property <color> text-color: Theme.text;
     in property <color> unit-color: Theme.text-dim;
+    in property <bool> show-outline: false;
+    in property <color> outline-color: #000000;
+    in property <length> outline-width: 2.5px * Theme.scale;
 
     height: root.font-size;
     width: 100%;
 
+    // Outline for speed number (drawn behind speed-label)
+    for offset in [
+        { dx: -1.0, dy: 0.0 }, { dx: 1.0, dy: 0.0 },
+        { dx: 0.0, dy: -1.0 }, { dx: 0.0, dy: 1.0 },
+        { dx: -0.7, dy: -0.7 }, { dx: 0.7, dy: -0.7 },
+        { dx: -0.7, dy: 0.7 }, { dx: 0.7, dy: 0.7 }
+    ]: Text {
+        visible: root.show-outline;
+        x: speed-label.x + (offset.dx * root.outline-width);
+        y: speed-label.y + (offset.dy * root.outline-width);
+        width: self.preferred-width;
+        height: self.preferred-height;
+        text: root.speed;
+        color: root.outline-color;
+        font-size: root.font-size;
+        font-weight: Theme.w-semibold;
+        vertical-alignment: bottom;
+    }
+
     speed-label := Text {
         x: root.center-align ? (parent.width - self.width) / 2 : 0px;
+        y: 0px;
         width: self.preferred-width;
         height: self.preferred-height;
         text: root.speed;
@@ -20,6 +43,24 @@ export component SpeedDisplay inherits Rectangle {
         font-size: root.font-size;
         font-weight: Theme.w-semibold;
         vertical-alignment: bottom;
+    }
+
+    // Outline for unit label (drawn behind unit-container)
+    for offset in [
+        { dx: -1.0, dy: 0.0 }, { dx: 1.0, dy: 0.0 },
+        { dx: 0.0, dy: -1.0 }, { dx: 0.0, dy: 1.0 },
+        { dx: -0.7, dy: -0.7 }, { dx: 0.7, dy: -0.7 },
+        { dx: -0.7, dy: 0.7 }, { dx: 0.7, dy: 0.7 }
+    ]: Text {
+        visible: root.show-outline;
+        x: speed-label.x + speed-label.width + 4px * Theme.scale + (offset.dx * 1.5px * Theme.scale);
+        y: parent.height - self.height - 8px * Theme.scale + (offset.dy * 1.5px * Theme.scale);
+        width: self.preferred-width;
+        height: self.preferred-height;
+        text: root.speed-unit;
+        color: root.outline-color;
+        font-size: Theme.font-14;
+        font-weight: Theme.w-semibold;
     }
 
     unit-container := VerticalLayout {
@@ -30,7 +71,7 @@ export component SpeedDisplay inherits Rectangle {
         padding-bottom: 8px * Theme.scale;
         Text {
             text: root.speed-unit;
-            color: root.unit-color;
+            color: root.show-outline ? #ffffff : root.unit-color;
             font-size: Theme.font-14;
             font-weight: Theme.w-semibold;
             horizontal-alignment: left;

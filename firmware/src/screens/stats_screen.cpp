@@ -110,6 +110,25 @@ extern "C" void stats_update_screen_display() {
     snprintf(speed_str, sizeof(speed_str), "%.1f", converted_speed);
   }
 
+  // Integrate spin angle for Aura style proportional to converted_speed (+ forward, - reverse)
+  static float aura_spin_angle = 0.0f;
+  static uint32_t last_spin_time_ms = 0;
+  uint32_t now_ms = esp_log_timestamp();
+  if (last_spin_time_ms != 0) {
+    float dt = (float)(now_ms - last_spin_time_ms) / 1000.0f;
+    if (dt > 0.0f && dt < 0.5f) {
+      // Positive speed spins counter-clockwise; negative speed spins clockwise
+      aura_spin_angle -= converted_speed * 36.0f * dt;
+      if (aura_spin_angle >= 360.0f) {
+        aura_spin_angle = fmodf(aura_spin_angle, 360.0f);
+      }
+      else if (aura_spin_angle < 0.0f) {
+        aura_spin_angle = 360.0f + fmodf(aura_spin_angle, 360.0f);
+      }
+    }
+  }
+  last_spin_time_ms = now_ms;
+
   // 3. Format board battery string
   char battery_str[32] = {0};
   switch (device_settings.battery_display) {
@@ -230,6 +249,8 @@ extern "C" void stats_update_screen_display() {
 
     state.set_speed(slint_speed_str);
     state.set_speed_unit(slint_speed_unit);
+    state.set_raw_speed(converted_speed);
+    state.set_spin_angle(aura_spin_angle);
     static float last_speed_fraction = -1.0f;
     static float last_duty_fraction = -1.0f;
     if (arc_fraction_moved(speed_fraction, &last_speed_fraction)) {

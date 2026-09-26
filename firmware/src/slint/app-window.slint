@@ -64,6 +64,8 @@ export global UiState {
     in property <string> speed: "0.0";
     in property <string> speed-unit: "KPH";
     in property <float> speed-fraction: 0;
+    in property <float> raw-speed: 0;
+    in property <float> spin-angle: 0;
     in property <float> duty-fraction: 0;
     in property <bool> left-pad: false;
     in property <bool> right-pad: false;
@@ -424,6 +426,8 @@ export component AppWindow inherits Window {
         speed: UiState.speed;
         speed-unit: UiState.speed-unit;
         speed-fraction: UiState.speed-fraction;
+        raw-speed: UiState.raw-speed;
+        spin-angle: UiState.spin-angle;
         duty-fraction: UiState.duty-fraction;
         duty-threshold: UiState.duty-threshold;
         duty-yellow-threshold: UiState.duty-yellow-threshold;

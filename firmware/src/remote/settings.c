@@ -477,11 +477,19 @@ char *get_wifi_ssid() {
   int ssid_length = 0;
   esp_err_t err = nvs_read_int("wifi_ssid_l", (uint32_t *)&ssid_length);
   if (err == ESP_ERR_NVS_NOT_FOUND || (err == ESP_OK && ssid_length == 0)) {
+#ifdef DEFAULT_WIFI_SSID
+    return DEFAULT_WIFI_SSID;
+#else
     return NULL;
+#endif
   }
   if (err != ESP_OK || ssid_length < 0 || ssid_length > WIFI_SSID_MAX_BYTES) {
     ESP_LOGE(TAG, "Error reading SSID length: %s", esp_err_to_name(err));
+#ifdef DEFAULT_WIFI_SSID
+    return DEFAULT_WIFI_SSID;
+#else
     return NULL;
+#endif
   }
 
   char ssid[ssid_length + 1];
@@ -489,13 +497,21 @@ char *get_wifi_ssid() {
   err = nvs_read_str("wifi_ssid", ssid, &required_size);
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "Error reading SSID: %s", esp_err_to_name(err));
+#ifdef DEFAULT_WIFI_SSID
+    return DEFAULT_WIFI_SSID;
+#else
     return NULL;
+#endif
   }
 
   static char final_ssid[WIFI_SSID_MAX_BYTES + 1]; // Static to ensure it remains valid after function returns
   if (required_size > sizeof(final_ssid)) {
     ESP_LOGE(TAG, "SSID size exceeds buffer size!");
+#ifdef DEFAULT_WIFI_SSID
+    return DEFAULT_WIFI_SSID;
+#else
     return NULL;
+#endif
   }
   strncpy(final_ssid, ssid, sizeof(final_ssid) - 1);
   final_ssid[sizeof(final_ssid) - 1] = '\0'; // Ensure null termination
@@ -507,11 +523,19 @@ char *get_wifi_password() {
   int password_length = 0;
   esp_err_t err = nvs_read_int("wifi_key_l", (uint32_t *)&password_length);
   if (err == ESP_ERR_NVS_NOT_FOUND || (err == ESP_OK && password_length == 0)) {
+#ifdef DEFAULT_WIFI_PASSWORD
+    return DEFAULT_WIFI_PASSWORD;
+#else
     return NULL;
+#endif
   }
   if (err != ESP_OK || password_length < 0 || password_length > WIFI_PASSWORD_MAX_BYTES) {
     ESP_LOGE(TAG, "Error reading password length: %s", esp_err_to_name(err));
+#ifdef DEFAULT_WIFI_PASSWORD
+    return DEFAULT_WIFI_PASSWORD;
+#else
     return NULL;
+#endif
   }
 
   char password[password_length + 1];
@@ -519,13 +543,21 @@ char *get_wifi_password() {
   err = nvs_read_str("wifi_password", password, &required_size);
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "Error reading password: %s", esp_err_to_name(err));
+#ifdef DEFAULT_WIFI_PASSWORD
+    return DEFAULT_WIFI_PASSWORD;
+#else
     return NULL;
+#endif
   }
 
   static char final_password[WIFI_PASSWORD_MAX_BYTES + 1]; // Static to ensure it remains valid after function returns
   if (required_size > sizeof(final_password)) {
     ESP_LOGE(TAG, "Password size exceeds buffer size!");
+#ifdef DEFAULT_WIFI_PASSWORD
+    return DEFAULT_WIFI_PASSWORD;
+#else
     return NULL;
+#endif
   }
   strncpy(final_password, password, sizeof(final_password) - 1);
   final_password[sizeof(final_password) - 1] = '\0'; // Ensure null termination
@@ -848,6 +880,21 @@ esp_err_t settings_init() {
     pairing_settings.channel = 1;
     pairing_settings.secret_code = DEFAULT_PAIRING_SECRET_CODE;
   }
+
+#ifdef DEFAULT_WIFI_SSID
+  char *current_ssid = get_wifi_ssid();
+  if (current_ssid == NULL || strcmp(current_ssid, DEFAULT_WIFI_SSID) != 0) {
+    ESP_LOGI(TAG, "Saving default Wi-Fi SSID: %s", DEFAULT_WIFI_SSID);
+    save_wifi_ssid(DEFAULT_WIFI_SSID);
+  }
+#endif
+#ifdef DEFAULT_WIFI_PASSWORD
+  char *current_pw = get_wifi_password();
+  if (current_pw == NULL || strcmp(current_pw, DEFAULT_WIFI_PASSWORD) != 0) {
+    ESP_LOGI(TAG, "Saving default Wi-Fi password");
+    save_wifi_password(DEFAULT_WIFI_PASSWORD);
+  }
+#endif
 
   return ESP_OK;
 }
